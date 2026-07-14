@@ -41,6 +41,7 @@ class RepairTask(models.Model):
     
     equipment = models.ForeignKey(Equipment, on_delete=models.CASCADE, related_name='repair_tasks')
     technician = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
+    team = models.ForeignKey('users.MaintenanceTeam', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
     schedule = models.ForeignKey(MaintenanceSchedule, on_delete=models.SET_NULL, null=True, blank=True, help_text="Linked if this is a preventive maintenance task")
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='REACTIVE')
     

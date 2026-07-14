@@ -29,7 +29,10 @@ export default function TaskList() {
       const response = await api.get('repair-tasks/?archived=all');
       let fetchedTasks = response.data;
       if (user?.role === 'TECHNICIAN') {
-        fetchedTasks = fetchedTasks.filter(task => task.technician === user.id);
+        const userTeamIds = user.maintenance_teams || [];
+        fetchedTasks = fetchedTasks.filter(task => 
+          task.technician === user.id || userTeamIds.includes(task.team)
+        );
       }
       setTasks(fetchedTasks);
     } catch (err) {
@@ -61,7 +64,12 @@ export default function TaskList() {
 
   const updateStatus = async (taskId, newStatus) => {
     try {
-      await api.patch(`repair-tasks/${taskId}/`, { status: newStatus });
+      const payload = { status: newStatus };
+      if (newStatus === 'IN_PROGRESS' && user?.role === 'TECHNICIAN') {
+        payload.technician = user.id;
+        payload.team = null;
+      }
+      await api.patch(`repair-tasks/${taskId}/`, payload);
       fetchTasks();
     } catch (err) {
       console.error("Failed to update status", err);
@@ -91,7 +99,7 @@ export default function TaskList() {
   const isTechnician = user?.role === 'TECHNICIAN';
   const isManager = user?.role === 'MANAGER' || user?.role === 'ADMIN';
 
-  const tabs = ['All', 'Pending', 'In Progress', 'Completed', 'Archived'];
+  const tabs = isManager ? ['All', 'Pending', 'In Progress', 'Completed', 'Archived'] : ['All', 'Pending', 'In Progress', 'Completed'];
 
   const getFilteredTasks = () => {
     switch (activeTab) {
@@ -245,23 +253,10 @@ export default function TaskList() {
                 <div className="flex items-center justify-between border-t border-gray-200 pt-2">
                   <p className="flex items-center">
                     <svg className="w-3.5 h-3.5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                    Technician: 
-                    {!isManager || task.status === 'COMPLETED' || task.status === 'CANCELLED' ? (
-                      <span className={task.technician ? 'text-gray-900 ml-1 font-semibold' : 'text-amber-600 ml-1 font-semibold'}>
-                        {task.technician_name ? task.technician_name : 'Unassigned'}
-                      </span>
-                    ) : (
-                      <select 
-                        value={task.technician || ''} 
-                        onChange={(e) => assignTechnician(task.id, e.target.value)}
-                        className="ml-2 bg-white border border-gray-300 rounded px-1 py-0.5 text-gray-900 text-xs focus:ring-1 focus:ring-teal-500 outline-none"
-                      >
-                        <option value="">Unassigned</option>
-                        {technicians.map(tech => (
-                          <option key={tech.id} value={tech.id}>{tech.first_name} {tech.last_name || tech.username}</option>
-                        ))}
-                      </select>
-                    )}
+                    Assignee: 
+                    <span className={(task.technician || task.team) ? 'text-gray-900 ml-1 font-semibold' : 'text-amber-600 ml-1 font-semibold'}>
+                      {task.technician_name ? task.technician_name : (task.team_name ? `${task.team_name}` : 'Unassigned')}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -269,12 +264,12 @@ export default function TaskList() {
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-4 mt-auto pt-4">
                 {/* Technician Actions */}
-                {isTechnician && task.technician === user.id && (
+                {isTechnician && (task.technician === user.id || task.team) && (
                   <>
                     {task.status === 'PENDING' && (
                       <button 
                         onClick={() => updateStatus(task.id, 'IN_PROGRESS')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-blue-500/20"
+                        className="bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-teal-500/20"
                       >
                         Start Work
                       </button>

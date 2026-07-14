@@ -22,6 +22,7 @@ class InspectionReportSerializer(serializers.ModelSerializer):
 
 class RepairTaskSerializer(serializers.ModelSerializer):
     equipment_name = serializers.CharField(source='equipment.name', read_only=True)
+    team_name = serializers.CharField(source='team.name', read_only=True, default=None)
     technician_name = serializers.SerializerMethodField()
     parts_used = PartUsageSerializer(many=True, read_only=True)
     inspection_report = InspectionReportSerializer(read_only=True)

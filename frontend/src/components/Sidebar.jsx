@@ -20,6 +20,7 @@ export default function Sidebar() {
     { name: 'Inventory', href: '/inventory' },
     { name: 'Tasks', href: '/tasks' },
     { name: 'Technicians', href: '/technicians' },
+    { name: 'Teams', href: '/teams' },
   ];
 
   return (

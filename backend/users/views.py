@@ -216,3 +216,11 @@ class TechnicianProfileViewSet(viewsets.ModelViewSet):
     queryset = TechnicianProfile.objects.all()
     serializer_class = TechnicianProfileSerializer
     permission_classes = [IsAuthenticated]
+
+from .models import MaintenanceTeam
+from .serializers import MaintenanceTeamSerializer
+
+class MaintenanceTeamViewSet(viewsets.ModelViewSet):
+    queryset = MaintenanceTeam.objects.all()
+    serializer_class = MaintenanceTeamSerializer
+    permission_classes = [IsAuthenticated]

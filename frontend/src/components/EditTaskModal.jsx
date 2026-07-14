@@ -8,21 +8,29 @@ export default function EditTaskModal({ task, onClose, onSuccess, technicians })
   const [technicianId, setTechnicianId] = useState(task.technician || '');
   const [source, setSource] = useState(task.source || 'REACTIVE');
   
+  const [teamId, setTeamId] = useState(task.team || '');
+  const [assignType, setAssignType] = useState(task.team ? 'TEAM' : 'INDIVIDUAL');
+  const [teams, setTeams] = useState([]);
+  
   const [equipmentList, setEquipmentList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchEquipment = async () => {
+    const fetchDependencies = async () => {
       try {
-        const response = await api.get('equipment/');
-        setEquipmentList(response.data);
+        const [eqRes, teamsRes] = await Promise.all([
+          api.get('equipment/'),
+          api.get('teams/')
+        ]);
+        setEquipmentList(eqRes.data);
+        setTeams(teamsRes.data);
       } catch (err) {
-        console.error("Failed to fetch equipment", err);
-        setError("Failed to load equipment list.");
+        console.error("Failed to fetch dependencies", err);
+        setError("Failed to load required data.");
       }
     };
-    fetchEquipment();
+    fetchDependencies();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -39,7 +47,8 @@ export default function EditTaskModal({ task, onClose, onSuccess, technicians })
       title,
       description,
       equipment: equipmentId,
-      technician: technicianId || null,
+      technician: assignType === 'INDIVIDUAL' ? (technicianId || null) : null,
+      team: assignType === 'TEAM' ? (teamId || null) : null,
       source
     };
 
@@ -120,17 +129,45 @@ export default function EditTaskModal({ task, onClose, onSuccess, technicians })
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Assign Technician</label>
-                <select 
-                  value={technicianId}
-                  onChange={(e) => setTechnicianId(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                >
-                  <option value="">Unassigned</option>
-                  {technicians.map(tech => (
-                    <option key={tech.id} value={tech.id}>{tech.first_name} {tech.last_name || tech.username}</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Assign To</label>
+                <div className="flex gap-2">
+                  <select 
+                    value={assignType}
+                    onChange={(e) => {
+                      setAssignType(e.target.value);
+                      setTechnicianId('');
+                      setTeamId('');
+                    }}
+                    className="w-1/3 px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm"
+                  >
+                    <option value="INDIVIDUAL">Individual</option>
+                    <option value="TEAM">Team</option>
+                  </select>
+                  
+                  {assignType === 'INDIVIDUAL' ? (
+                    <select 
+                      value={technicianId}
+                      onChange={(e) => setTechnicianId(e.target.value)}
+                      className="w-2/3 px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm"
+                    >
+                      <option value="">Unassigned</option>
+                      {technicians.map(tech => (
+                        <option key={tech.id} value={tech.id}>{tech.first_name} {tech.last_name || tech.username}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select 
+                      value={teamId}
+                      onChange={(e) => setTeamId(e.target.value)}
+                      className="w-2/3 px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm"
+                    >
+                      <option value="">Unassigned</option>
+                      {teams.map(team => (
+                        <option key={team.id} value={team.id}>{team.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -162,7 +199,7 @@ export default function EditTaskModal({ task, onClose, onSuccess, technicians })
             type="submit"
             form="edit-task-form"
             disabled={loading}
-            className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/20 transition-all disabled:opacity-70 flex items-center"
+            className="px-6 py-2 text-sm font-bold text-white bg-teal-500 hover:bg-teal-600 rounded-xl shadow-md shadow-teal-500/20 transition-all disabled:opacity-70 flex items-center"
           >
             {loading ? 'Saving...' : 'Save Changes'}
           </button>

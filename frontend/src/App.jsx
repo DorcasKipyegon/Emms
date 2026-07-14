@@ -13,6 +13,7 @@ import SetupAccount from './pages/SetupAccount';
 import TechnicianEquipmentList from './pages/TechnicianEquipmentList';
 import TechnicianEquipmentDetail from './pages/TechnicianEquipmentDetail';
 import TechnicianList from './pages/TechnicianList';
+import TeamManagement from './pages/TeamManagement';
 
 // A wrapper to protect routes and redirect if not logged in
 const ProtectedRoute = ({ children }) => {
@@ -42,6 +43,7 @@ function AppRoutes() {
       <Route path="/inventory" element={<ProtectedRoute><InventoryList /></ProtectedRoute>} />
       <Route path="/tasks" element={<ProtectedRoute><TaskList /></ProtectedRoute>} />
       <Route path="/technicians" element={<ProtectedRoute><TechnicianList /></ProtectedRoute>} />
+      <Route path="/teams" element={<ProtectedRoute><TeamManagement /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       
       {/* Technician specific routes */}
