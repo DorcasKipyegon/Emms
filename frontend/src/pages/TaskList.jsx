@@ -8,6 +8,7 @@ import CancelTaskModal from '../components/CancelTaskModal';
 import ViewTaskModal from '../components/ViewTaskModal';
 import DeleteTaskModal from '../components/DeleteTaskModal';
 import ArchiveTaskModal from '../components/ArchiveTaskModal';
+import OnHoldModal from '../components/OnHoldModal';
 
 export default function TaskList() {
   const [tasks, setTasks] = useState([]);
@@ -21,6 +22,7 @@ export default function TaskList() {
   const [viewingTask, setViewingTask] = useState(null);
   const [deletingTask, setDeletingTask] = useState(null);
   const [archivingTask, setArchivingTask] = useState(null);
+  const [holdingTask, setHoldingTask] = useState(null);
   const [activeTab, setActiveTab] = useState('All');
   const { user } = useAuth();
 
@@ -62,12 +64,13 @@ export default function TaskList() {
     }
   }, [user]);
 
-  const updateStatus = async (taskId, newStatus) => {
+  const updateStatus = async (taskId, newStatus, extraData = {}) => {
     try {
-      const payload = { status: newStatus };
+      const payload = { status: newStatus, ...extraData };
       if (newStatus === 'IN_PROGRESS' && user?.role === 'TECHNICIAN') {
         payload.technician = user.id;
         payload.team = null;
+        payload.on_hold_reason = null; // Clear the reason when resuming
       }
       await api.patch(`repair-tasks/${taskId}/`, payload);
       fetchTasks();
@@ -91,6 +94,7 @@ export default function TaskList() {
     switch (status) {
       case 'COMPLETED': return 'bg-white text-emerald-600 border border-emerald-200';
       case 'IN_PROGRESS': return 'bg-white text-blue-600 border border-blue-200';
+      case 'ON_HOLD': return 'bg-white text-orange-600 border border-orange-200';
       case 'CANCELLED': return 'bg-white text-rose-600 border border-rose-200';
       default: return 'bg-white text-amber-600 border border-amber-200'; // PENDING
     }
@@ -99,12 +103,13 @@ export default function TaskList() {
   const isTechnician = user?.role === 'TECHNICIAN';
   const isManager = user?.role === 'MANAGER' || user?.role === 'ADMIN';
 
-  const tabs = isManager ? ['All', 'Pending', 'In Progress', 'Completed', 'Archived'] : ['All', 'Pending', 'In Progress', 'Completed'];
+  const tabs = isManager ? ['All', 'Pending', 'In Progress', 'On Hold', 'Completed', 'Archived'] : ['All', 'Pending', 'In Progress', 'On Hold', 'Completed'];
 
   const getFilteredTasks = () => {
     switch (activeTab) {
       case 'Pending': return tasks.filter(t => !t.is_archived && t.status === 'PENDING');
       case 'In Progress': return tasks.filter(t => !t.is_archived && t.status === 'IN_PROGRESS');
+      case 'On Hold': return tasks.filter(t => !t.is_archived && t.status === 'ON_HOLD');
       case 'Completed': return tasks.filter(t => !t.is_archived && (t.status === 'COMPLETED' || t.status === 'CANCELLED'));
       case 'Archived': return tasks.filter(t => t.is_archived);
       default: return tasks.filter(t => !t.is_archived);
@@ -115,6 +120,7 @@ export default function TaskList() {
     switch (tab) {
       case 'Pending': return tasks.filter(t => !t.is_archived && t.status === 'PENDING').length;
       case 'In Progress': return tasks.filter(t => !t.is_archived && t.status === 'IN_PROGRESS').length;
+      case 'On Hold': return tasks.filter(t => !t.is_archived && t.status === 'ON_HOLD').length;
       case 'Completed': return tasks.filter(t => !t.is_archived && (t.status === 'COMPLETED' || t.status === 'CANCELLED')).length;
       case 'Archived': return tasks.filter(t => t.is_archived).length;
       default: return tasks.filter(t => !t.is_archived).length;
@@ -242,6 +248,13 @@ export default function TaskList() {
               
               <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">{task.description}</p>
               
+              {task.status === 'ON_HOLD' && task.on_hold_reason && (
+                <div className="bg-orange-50 border border-orange-200 text-orange-800 text-xs px-3 py-2 rounded-lg mb-4 flex items-center">
+                  <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <span className="font-medium">Reason:</span> <span className="ml-1 truncate">{task.on_hold_reason}</span>
+                </div>
+              )}
+              
               <div className="text-xs font-medium text-gray-600 bg-gray-50 p-3 rounded-lg mb-4 space-y-2 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <p className="flex items-center">
@@ -275,11 +288,27 @@ export default function TaskList() {
                       </button>
                     )}
                     {task.status === 'IN_PROGRESS' && (
+                      <>
+                        <button 
+                          onClick={() => setHoldingTask(task)}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-emerald-900/20"
+                        >
+                          On Hold
+                        </button>
+                        <button 
+                          onClick={() => setCompletingTask(task)}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-emerald-500/20"
+                        >
+                          Mark Completed
+                        </button>
+                      </>
+                    )}
+                    {task.status === 'ON_HOLD' && (
                       <button 
-                        onClick={() => setCompletingTask(task)}
+                        onClick={() => updateStatus(task.id, 'IN_PROGRESS')}
                         className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-emerald-500/20"
                       >
-                        Mark Completed
+                        Resume Work
                       </button>
                     )}
                   </>
@@ -294,7 +323,7 @@ export default function TaskList() {
                         <button onClick={() => setEditingTask(task)} className="bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-teal-500/20">Edit Task</button>
                       </>
                     )}
-                    {task.status === 'IN_PROGRESS' && (
+                    {(task.status === 'IN_PROGRESS' || task.status === 'ON_HOLD') && (
                       <>
                         <button onClick={() => setCancelingTask(task)} className="text-rose-500 hover:text-rose-700 hover:underline text-sm font-medium transition-colors">Cancel Task</button>
                         <button onClick={() => setEditingTask(task)} className="bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-teal-500/20">Edit Task</button>
@@ -383,6 +412,17 @@ export default function TaskList() {
           onClose={() => setArchivingTask(null)}
           onSuccess={() => {
             setArchivingTask(null);
+            fetchTasks();
+          }}
+        />
+      )}
+      
+      {holdingTask && (
+        <OnHoldModal 
+          task={holdingTask}
+          onClose={() => setHoldingTask(null)}
+          onSuccess={() => {
+            setHoldingTask(null);
             fetchTasks();
           }}
         />

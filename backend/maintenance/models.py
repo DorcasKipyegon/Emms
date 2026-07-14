@@ -31,6 +31,7 @@ class RepairTask(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
         ('IN_PROGRESS', 'In Progress'),
+        ('ON_HOLD', 'On Hold'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),
     )
@@ -49,6 +50,7 @@ class RepairTask(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     completion_notes = models.TextField(blank=True, null=True)
+    on_hold_reason = models.CharField(max_length=255, blank=True, null=True)
     
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
