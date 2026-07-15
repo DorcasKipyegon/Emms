@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --color-teal-50: #eefdf7;
+  --color-teal-100: #d5faeb;
+  --color-teal-200: #aef4d8;
+  --color-teal-300: #7aecc0;
+  --color-teal-400: #42e1a4;
+  --color-teal-500: #13e39d;
+  --color-teal-600: #0dc185;
+  --color-teal-700: #0a9b6c;
+  --color-teal-800: #0a7a58;
+  --color-teal-900: #096449;
+  --color-teal-950: #04392b;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

@@ -46,8 +46,16 @@ class RepairTask(models.Model):
     schedule = models.ForeignKey(MaintenanceSchedule, on_delete=models.SET_NULL, null=True, blank=True, help_text="Linked if this is a preventive maintenance task")
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='REACTIVE')
     
+    PRIORITY_CHOICES = (
+        ('CRITICAL', 'Critical'),
+        ('HIGH', 'High'),
+        ('MEDIUM', 'Medium'),
+        ('LOW', 'Low'),
+    )
+    
     title = models.CharField(max_length=200)
     description = models.TextField()
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     completion_notes = models.TextField(blank=True, null=True)
     on_hold_reason = models.CharField(max_length=255, blank=True, null=True)

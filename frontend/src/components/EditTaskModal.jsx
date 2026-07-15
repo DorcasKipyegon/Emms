@@ -7,6 +7,7 @@ export default function EditTaskModal({ task, onClose, onSuccess, technicians })
   const [equipmentId, setEquipmentId] = useState(task.equipment || '');
   const [technicianId, setTechnicianId] = useState(task.technician || '');
   const [source, setSource] = useState(task.source || 'REACTIVE');
+  const [priority, setPriority] = useState(task.priority || 'MEDIUM');
   
   const [teamId, setTeamId] = useState(task.team || '');
   const [assignType, setAssignType] = useState(task.team ? 'TEAM' : 'INDIVIDUAL');
@@ -49,7 +50,8 @@ export default function EditTaskModal({ task, onClose, onSuccess, technicians })
       equipment: equipmentId,
       technician: assignType === 'INDIVIDUAL' ? (technicianId || null) : null,
       team: assignType === 'TEAM' ? (teamId || null) : null,
-      source
+      source,
+      priority
     };
 
     try {
@@ -180,6 +182,20 @@ export default function EditTaskModal({ task, onClose, onSuccess, technicians })
               >
                 <option value="REACTIVE">Reactive (Breakdown)</option>
                 <option value="PREVENTIVE">Preventive Maintenance</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Priority</label>
+              <select 
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              >
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
               </select>
             </div>
 

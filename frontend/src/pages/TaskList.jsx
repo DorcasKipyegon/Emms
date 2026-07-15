@@ -92,12 +92,38 @@ export default function TaskList() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'COMPLETED': return 'bg-white text-emerald-600 border border-emerald-200';
-      case 'IN_PROGRESS': return 'bg-white text-blue-600 border border-blue-200';
-      case 'ON_HOLD': return 'bg-white text-orange-600 border border-orange-200';
-      case 'CANCELLED': return 'bg-white text-rose-600 border border-rose-200';
-      default: return 'bg-white text-amber-600 border border-amber-200'; // PENDING
+      case 'COMPLETED': return 'bg-emerald-50 text-emerald-700';
+      case 'IN_PROGRESS': return 'bg-blue-50 text-blue-700';
+      case 'ON_HOLD': return 'bg-orange-50 text-orange-700';
+      case 'CANCELLED': return 'bg-rose-50 text-rose-700';
+      default: return 'bg-amber-50 text-amber-700'; // PENDING
     }
+  };
+
+  const renderPriority = (priority) => {
+    if (!priority) return null;
+    let icon;
+    switch (priority) {
+      case 'CRITICAL':
+        icon = <svg className="w-3 h-3 mr-1.5 text-rose-600" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L22 7.77v8.46L12 22l-10-5.77V7.77L12 2z"/></svg>;
+        break;
+      case 'HIGH':
+        icon = <svg className="w-3 h-3 mr-1.5 text-orange-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L22 12 12 22 2 12 12 2z"/></svg>;
+        break;
+      case 'MEDIUM':
+        icon = <svg className="w-3 h-3 mr-1.5 text-amber-500" viewBox="0 0 24 24" fill="currentColor"><path d="M21 7L12 22 3 7h18z"/></svg>;
+        break;
+      case 'LOW':
+        icon = <svg className="w-3 h-3 mr-1.5 text-lime-500" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>;
+        break;
+      default: return null;
+    }
+    return (
+      <div className="flex items-center text-gray-500 text-xs font-medium mt-1">
+        {icon}
+        {priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase()}
+      </div>
+    );
   };
 
   const isTechnician = user?.role === 'TECHNICIAN';
@@ -241,16 +267,18 @@ export default function TaskList() {
             <div key={task.id} className="bg-white border border-gray-200 rounded-xl p-5 hover:-translate-y-1 transition-transform shadow-sm flex flex-col">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="font-bold text-gray-900 text-lg leading-tight">{task.title}</h3>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-md whitespace-nowrap ml-2 ${getStatusColor(task.status)}`}>
-                  {task.status.replace('_', ' ')}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-md whitespace-nowrap ml-2 ${getStatusColor(task.status)}`}>
+                    {task.status.replace('_', ' ')}
+                  </span>
+                  {renderPriority(task.priority)}
+                </div>
               </div>
               
               <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">{task.description}</p>
               
               {task.status === 'ON_HOLD' && task.on_hold_reason && (
-                <div className="bg-orange-50 border border-orange-200 text-orange-800 text-xs px-3 py-2 rounded-lg mb-4 flex items-center">
-                  <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div className="bg-gray-50 text-gray-600 text-xs px-3 py-2 rounded-lg mb-4 flex items-center">
                   <span className="font-medium">Reason:</span> <span className="ml-1 truncate">{task.on_hold_reason}</span>
                 </div>
               )}
@@ -319,13 +347,13 @@ export default function TaskList() {
                   <>
                     {task.status === 'PENDING' && (
                       <>
-                        <button onClick={() => setDeletingTask(task)} className="text-rose-500 hover:text-rose-700 hover:underline text-sm font-medium transition-colors">Delete</button>
+                        <button onClick={() => setDeletingTask(task)} className="text-gray-500 hover:text-gray-700 hover:underline text-sm font-medium transition-colors">Delete</button>
                         <button onClick={() => setEditingTask(task)} className="bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-teal-500/20">Edit Task</button>
                       </>
                     )}
                     {(task.status === 'IN_PROGRESS' || task.status === 'ON_HOLD') && (
                       <>
-                        <button onClick={() => setCancelingTask(task)} className="text-rose-500 hover:text-rose-700 hover:underline text-sm font-medium transition-colors">Cancel Task</button>
+                        <button onClick={() => setCancelingTask(task)} className="text-gray-500 hover:text-gray-700 hover:underline text-sm font-medium transition-colors">Cancel Task</button>
                         <button onClick={() => setEditingTask(task)} className="bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-teal-500/20">Edit Task</button>
                       </>
                     )}
