@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 
-export default function AddTaskModal({ onClose, onSuccess, technicians }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [equipmentId, setEquipmentId] = useState('');
+export default function AddTaskModal({ onClose, onSuccess, technicians, initialData = {} }) {
+  const [title, setTitle] = useState(initialData.title || '');
+  const [description, setDescription] = useState(initialData.description || '');
+  const [equipmentId, setEquipmentId] = useState(initialData.equipment || '');
   const [technicianId, setTechnicianId] = useState('');
   const [source, setSource] = useState('REACTIVE');
-  const [priority, setPriority] = useState('MEDIUM');
+  const [priority, setPriority] = useState(initialData.priority || 'MEDIUM');
   
   const [teamId, setTeamId] = useState('');
   const [assignType, setAssignType] = useState('INDIVIDUAL');

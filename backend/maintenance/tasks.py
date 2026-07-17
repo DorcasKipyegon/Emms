@@ -2,7 +2,7 @@ from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
-from .models import MaintenanceSchedule, RepairTask
+from .models import MaintenanceSchedule, RepairTask, TaskChecklistItem
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,14 +25,23 @@ def generate_preventive_maintenance_tasks():
     time_tasks_created = 0
     for schedule in time_schedules:
         # Create the repair task
-        RepairTask.objects.create(
+        task = RepairTask.objects.create(
             equipment=schedule.equipment,
             schedule=schedule,
             source='PREVENTIVE',
             status='PENDING',
+            is_inspection=bool(schedule.inspection_template),
             title=f"PM: {schedule.title}",
             description=f"Auto-generated preventive maintenance.\n{schedule.description or ''}"
         )
+        
+        if schedule.inspection_template:
+            for item in schedule.inspection_template.items.all():
+                TaskChecklistItem.objects.create(
+                    task=task,
+                    text=item.text,
+                    order=item.order
+                )
         
         # Advance the schedule's next due date
         if schedule.frequency_days:
@@ -52,14 +61,23 @@ def generate_preventive_maintenance_tasks():
     for schedule in usage_schedules:
         if schedule.next_due_hours and schedule.equipment.current_runtime_hours >= schedule.next_due_hours:
             # Create the repair task
-            RepairTask.objects.create(
+            task = RepairTask.objects.create(
                 equipment=schedule.equipment,
                 schedule=schedule,
                 source='PREVENTIVE',
                 status='PENDING',
+                is_inspection=bool(schedule.inspection_template),
                 title=f"Usage PM: {schedule.title}",
                 description=f"Auto-generated usage maintenance. Triggered at {schedule.equipment.current_runtime_hours} hours.\n{schedule.description or ''}"
             )
+            
+            if schedule.inspection_template:
+                for item in schedule.inspection_template.items.all():
+                    TaskChecklistItem.objects.create(
+                        task=task,
+                        text=item.text,
+                        order=item.order
+                    )
             
             # Advance the schedule's next due hours
             if schedule.frequency_hours:

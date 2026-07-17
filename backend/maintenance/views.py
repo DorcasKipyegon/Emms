@@ -4,17 +4,36 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from django.utils import timezone
-from .models import MaintenanceSchedule, RepairTask, InspectionReport, PartUsage, DowntimeLog
+from .models import MaintenanceSchedule, RepairTask, InspectionReport, PartUsage, DowntimeLog, InspectionTemplate, TaskChecklistItem, MaintenanceRequest
 from inventory.models import SparePart
 from .serializers import (
     MaintenanceScheduleSerializer, RepairTaskSerializer, 
-    InspectionReportSerializer, PartUsageSerializer
+    InspectionReportSerializer, PartUsageSerializer,
+    InspectionTemplateSerializer, TaskChecklistItemSerializer,
+    MaintenanceRequestSerializer
 )
 
 class MaintenanceScheduleViewSet(viewsets.ModelViewSet):
     queryset = MaintenanceSchedule.objects.all()
     serializer_class = MaintenanceScheduleSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        equipment_id = self.request.query_params.get('equipment')
+        if equipment_id:
+            queryset = queryset.filter(equipment_id=equipment_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        # Automatically set the next due triggers so they trigger immediately or soon
+        schedule = serializer.save()
+        if schedule.trigger_type == 'TIME' and not schedule.next_due_date:
+            schedule.next_due_date = timezone.now().date()
+            schedule.save()
+        elif schedule.trigger_type == 'USAGE' and not schedule.next_due_hours:
+            schedule.next_due_hours = schedule.equipment.current_runtime_hours
+            schedule.save()
 
 class RepairTaskViewSet(viewsets.ModelViewSet):
     queryset = RepairTask.objects.all()
@@ -166,3 +185,43 @@ class PartUsageViewSet(viewsets.ModelViewSet):
     queryset = PartUsage.objects.all()
     serializer_class = PartUsageSerializer
     permission_classes = [IsAuthenticated]
+
+class InspectionTemplateViewSet(viewsets.ModelViewSet):
+    queryset = InspectionTemplate.objects.all()
+    serializer_class = InspectionTemplateSerializer
+    permission_classes = [IsAuthenticated]
+
+class TaskChecklistItemViewSet(viewsets.ModelViewSet):
+    queryset = TaskChecklistItem.objects.all()
+    serializer_class = TaskChecklistItemSerializer
+    permission_classes = [IsAuthenticated]
+
+class MaintenanceRequestViewSet(viewsets.ModelViewSet):
+    queryset = MaintenanceRequest.objects.all().order_by('-created_at')
+    serializer_class = MaintenanceRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        return queryset
+
+    def perform_create(self, serializer):
+        request_obj = serializer.save(reported_by=self.request.user)
+        self._notify_managers(request_obj)
+
+    def _notify_managers(self, request_obj):
+        from emms_backend.notifications import send_system_sms, send_system_email
+        from users.models import User
+        
+        managers = User.objects.filter(role='MANAGER')
+        subject = f"New Maintenance Request: {request_obj.title}"
+        message = f"Alert! A new maintenance request has been submitted by {request_obj.reported_by.get_full_name() if request_obj.reported_by else 'a technician'} for {request_obj.equipment.name}.\n\nDetails: {request_obj.description}"
+        
+        for manager in managers:
+            if manager.email:
+                send_system_email(manager.email, subject, message)
+            if manager.phone_number:
+                send_system_sms(manager.phone_number, message)

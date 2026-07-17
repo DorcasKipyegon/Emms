@@ -1,10 +1,21 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../api';
 
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.role !== 'TECHNICIAN') {
+      api.get('maintenance-requests/?status=PENDING')
+        .then(res => setPendingRequestsCount(res.data.length))
+        .catch(console.error);
+    }
+  }, [location.pathname, user]);
 
   const handleLogout = () => {
     logout();
@@ -49,6 +60,18 @@ export default function Sidebar() {
     </svg>
   );
 
+  const checklistsIcon = (
+    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+  );
+
+  const requestsIcon = (
+    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
+  );
+
   const navigation = user?.role === 'TECHNICIAN' ? [
     { name: 'My Tasks', href: '/tasks', icon: tasksIcon },
     { name: 'My Equipment', href: '/my-equipment', icon: equipmentIcon }
@@ -57,6 +80,8 @@ export default function Sidebar() {
     { name: 'Equipment', href: '/equipment', icon: equipmentIcon },
     { name: 'Inventory', href: '/inventory', icon: inventoryIcon },
     { name: 'Tasks', href: '/tasks', icon: tasksIcon },
+    { name: 'Requests', href: '/requests', icon: requestsIcon, badge: pendingRequestsCount },
+    { name: 'Checklists', href: '/checklists', icon: checklistsIcon },
     { name: 'Technicians', href: '/technicians', icon: usersIcon },
     { name: 'Teams', href: '/teams', icon: teamsIcon },
   ];
@@ -83,7 +108,12 @@ export default function Sidebar() {
               <div className="mr-4">
                 {item.icon}
               </div>
-              <span className="font-bold text-[15px]">{item.name}</span>
+              <span className="font-bold text-[15px] flex-grow">{item.name}</span>
+              {item.badge > 0 && (
+                <span className="ml-auto bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}

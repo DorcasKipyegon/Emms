@@ -23,6 +23,9 @@ export default function TaskList() {
   const [deletingTask, setDeletingTask] = useState(null);
   const [archivingTask, setArchivingTask] = useState(null);
   const [holdingTask, setHoldingTask] = useState(null);
+  const [followUpData, setFollowUpData] = useState(null);
+  const [flagRepairPromptData, setFlagRepairPromptData] = useState(null);
+  const [flagRepairSuccess, setFlagRepairSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('All');
   const { user } = useAuth();
 
@@ -375,9 +378,20 @@ export default function TaskList() {
         <TaskCompletionModal 
           task={completingTask} 
           onClose={() => setCompletingTask(null)} 
-          onSuccess={() => {
+          onSuccess={(hasFailedItems, failedItemsList) => {
             setCompletingTask(null);
             fetchTasks();
+            
+            if (hasFailedItems) {
+              const failedTexts = failedItemsList.map(i => `- ${i.text}: ${i.notes}`).join('\n');
+              setFlagRepairPromptData({
+                equipment: completingTask.equipment,
+                source_inspection: completingTask.id,
+                title: `Follow-up Repair: ${completingTask.title}`,
+                description: `Failed items from inspection:\n${failedTexts}`,
+                suggested_priority: 'HIGH'
+              });
+            }
           }} 
         />
       )}
@@ -385,9 +399,14 @@ export default function TaskList() {
       {showAddModal && (
         <AddTaskModal 
           technicians={technicians}
-          onClose={() => setShowAddModal(false)}
+          initialData={followUpData || {}}
+          onClose={() => {
+            setShowAddModal(false);
+            setFollowUpData(null);
+          }}
           onSuccess={() => {
             setShowAddModal(false);
+            setFollowUpData(null);
             fetchTasks();
           }}
         />
@@ -455,6 +474,77 @@ export default function TaskList() {
           }}
         />
       )}
+
+      {/* Custom Flag Repair Prompt Modal */}
+      {flagRepairPromptData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div className="bg-[#13e39d] px-6 py-4 border-b border-[#13e39d]/20 flex justify-between items-center">
+              <h3 className="font-bold text-[#0a1c2e] text-lg flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                Action Required
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 font-medium mb-6">
+                One or more items failed inspection. Would you like to flag this for a follow-up repair?
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setFlagRepairPromptData(null)}
+                  className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={() => {
+                    api.post('maintenance-requests/', flagRepairPromptData)
+                      .then(() => {
+                        setFlagRepairPromptData(null);
+                        setFlagRepairSuccess(true);
+                      })
+                      .catch(err => {
+                        console.error('Error creating maintenance request:', err);
+                        alert('Failed to create maintenance request.');
+                        setFlagRepairPromptData(null);
+                      });
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-[#0a1c2e] bg-[#13e39d] hover:bg-[#10c88a] rounded-xl shadow-md shadow-[#13e39d]/20 transition-colors"
+                >
+                  Yes, Flag for Review
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Success Modal */}
+      {flagRepairSuccess && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl text-center">
+            <div className="p-8">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-[#13e39d]/20 mb-6">
+                <svg className="h-8 w-8 text-[#10c88a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-[#0a1c2e] mb-2">Successfully Flagged</h3>
+              <p className="text-gray-500 mb-8">
+                The maintenance request has been forwarded to the manager for review.
+              </p>
+              <button
+                onClick={() => setFlagRepairSuccess(false)}
+                className="w-full px-4 py-3 text-sm font-bold text-[#0a1c2e] bg-[#13e39d] hover:bg-[#10c88a] rounded-xl shadow-md shadow-[#13e39d]/20 transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

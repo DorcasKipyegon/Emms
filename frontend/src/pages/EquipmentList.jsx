@@ -40,6 +40,16 @@ export default function EquipmentList() {
   const [updatingRuntime, setUpdatingRuntime] = useState(false);
   const [runtimeError, setRuntimeError] = useState('');
 
+  // Maintenance Schedules Modal State
+  const [isSchedulesOpen, setIsSchedulesOpen] = useState(false);
+  const [scheduleEquipment, setScheduleEquipment] = useState(null);
+  const [schedules, setSchedules] = useState([]);
+  const [inspectionTemplates, setInspectionTemplates] = useState([]);
+  const [newSchedule, setNewSchedule] = useState({
+    title: '', description: '', trigger_type: 'TIME', 
+    frequency_days: '', frequency_hours: '', inspection_template: ''
+  });
+
   const fetchEquipment = async () => {
     try {
       const response = await api.get('equipment/');
@@ -221,10 +231,47 @@ export default function EquipmentList() {
           >
             📎 Vault ({row.documents?.length || 0})
           </button>
+          <button 
+            onClick={() => handleOpenSchedules(row)}
+            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 transition-colors"
+          >
+            📅 PMs
+          </button>
         </div>
       )
     }
   ];
+
+  const handleOpenSchedules = async (equipment) => {
+    setScheduleEquipment(equipment);
+    setIsSchedulesOpen(true);
+    try {
+      const res = await api.get(`schedules/?equipment=${equipment.id}`);
+      setSchedules(res.data);
+      const tRes = await api.get('inspection-templates/');
+      setInspectionTemplates(tRes.data);
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateSchedule = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = { ...newSchedule, equipment: scheduleEquipment.id };
+      if (!payload.inspection_template) delete payload.inspection_template;
+      if (!payload.frequency_days) delete payload.frequency_days;
+      if (!payload.frequency_hours) delete payload.frequency_hours;
+      
+      await api.post('schedules/', payload);
+      setNewSchedule({ title: '', description: '', trigger_type: 'TIME', frequency_days: '', frequency_hours: '', inspection_template: '' });
+      const res = await api.get(`schedules/?equipment=${scheduleEquipment.id}`);
+      setSchedules(res.data);
+    } catch(err) {
+      console.error(err);
+      alert('Failed to create schedule');
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 relative">
@@ -520,6 +567,98 @@ export default function EquipmentList() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* PM Schedules Modal */}
+      {isSchedulesOpen && scheduleEquipment && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-900">PM Schedules - {scheduleEquipment.name}</h3>
+              <button onClick={() => setIsSchedulesOpen(false)} className="text-gray-400 hover:text-gray-900 bg-white hover:bg-gray-100 rounded-full p-1 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6">
+              {/* List existing schedules */}
+              <div>
+                <h4 className="font-bold text-gray-800 mb-3">Existing Schedules</h4>
+                {schedules.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic bg-gray-50 p-3 rounded-lg border border-dashed border-gray-200">No schedules set.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {schedules.map(sch => (
+                      <li key={sch.id} className="p-3 border border-gray-200 rounded-lg bg-white shadow-sm flex flex-col gap-1">
+                        <div className="flex justify-between items-start">
+                          <span className="font-bold text-indigo-700">{sch.title}</span>
+                          <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full">{sch.trigger_type}</span>
+                        </div>
+                        <span className="text-sm text-gray-600">{sch.description}</span>
+                        {sch.trigger_type === 'TIME' && <span className="text-xs text-gray-500">Every {sch.frequency_days} days</span>}
+                        {sch.trigger_type === 'USAGE' && <span className="text-xs text-gray-500">Every {sch.frequency_hours} hours</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Add new schedule form */}
+              <div className="border-t border-gray-200 pt-6">
+                <h4 className="font-bold text-gray-800 mb-3">Create New Schedule</h4>
+                <form onSubmit={handleCreateSchedule} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                      <input required type="text" value={newSchedule.title} onChange={e => setNewSchedule({...newSchedule, title: e.target.value})} className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Trigger Type</label>
+                      <select value={newSchedule.trigger_type} onChange={e => setNewSchedule({...newSchedule, trigger_type: e.target.value})} className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="TIME">Time-based (Days)</option>
+                        <option value="USAGE">Usage-based (Hours)</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea required value={newSchedule.description} onChange={e => setNewSchedule({...newSchedule, description: e.target.value})} rows="2" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {newSchedule.trigger_type === 'TIME' ? (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Frequency (Days)</label>
+                        <input required type="number" min="1" value={newSchedule.frequency_days} onChange={e => setNewSchedule({...newSchedule, frequency_days: e.target.value})} className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Frequency (Hours)</label>
+                        <input required type="number" min="1" step="0.1" value={newSchedule.frequency_hours} onChange={e => setNewSchedule({...newSchedule, frequency_hours: e.target.value})} className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Inspection Template (Optional)</label>
+                      <select value={newSchedule.inspection_template} onChange={e => setNewSchedule({...newSchedule, inspection_template: e.target.value})} className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">-- No Checklist --</option>
+                        {inspectionTemplates.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end pt-2">
+                    <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                      Create Schedule
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       )}

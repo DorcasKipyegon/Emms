@@ -9,9 +9,11 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
   const [availableParts, setAvailableParts] = useState([]);
   const [partsUsed, setPartsUsed] = useState([]);
   const [notes, setNotes] = useState('');
+  const [checklist, setChecklist] = useState(task.checklist_items || []);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [missingItemIds, setMissingItemIds] = useState([]);
 
   useEffect(() => {
     const fetchParts = async () => {
@@ -52,6 +54,10 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
     setPartsUsed(newParts);
   };
 
+  const handleChecklistChange = (id, field, value) => {
+    setChecklist(checklist.map(item => item.id === id ? { ...item, [field]: value } : item));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -67,8 +73,53 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
     };
 
     try {
+      if (task.is_inspection) {
+        // Validation
+        const pendingItems = checklist.filter(item => item.status === 'PENDING');
+        const failedWithoutNotes = checklist.filter(item => item.status === 'FAIL' && !item.notes?.trim());
+        const allErrors = [...pendingItems, ...failedWithoutNotes];
+
+        if (allErrors.length > 0) {
+            const errorIds = allErrors.map(i => i.id);
+            setMissingItemIds(errorIds);
+            
+            if (pendingItems.length > 0) {
+              setError(`Please complete all checklist items before submitting. (${pendingItems.length} remaining)`);
+            } else {
+              setError("Notes are required for all failed checklist items.");
+            }
+            
+            setLoading(false);
+            
+            // Auto-scroll to first error
+            setTimeout(() => {
+              const firstErrorEl = document.getElementById(`checklist-item-${errorIds[0]}`);
+              if (firstErrorEl) {
+                firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 50);
+            return;
+        }
+
+        setMissingItemIds([]);
+
+        // Save items
+        await Promise.all(checklist.map(item => {
+           const formData = new FormData();
+           formData.append('status', item.status);
+           if (item.notes) formData.append('notes', item.notes);
+           if (item.photoFile) formData.append('photo', item.photoFile);
+           
+           return api.patch(`task-checklist-items/${item.id}/`, formData, {
+               headers: { 'Content-Type': 'multipart/form-data' }
+           });
+        }));
+      }
+
       await api.post(`repair-tasks/${task.id}/complete_task/`, payload);
-      onSuccess();
+      const hasFailedItems = task.is_inspection && checklist.some(i => i.status === 'FAIL');
+      const failedItemsList = checklist.filter(i => i.status === 'FAIL');
+      onSuccess(hasFailedItems, failedItemsList);
     } catch (err) {
       console.error("Failed to complete task", err);
       setError(err.response?.data?.error || "Failed to complete task. Please try again.");
@@ -82,7 +133,7 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
       <div className="bg-white rounded-[1.5rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
           <h3 className="font-bold text-gray-900 text-lg">Complete Task</h3>
           <button 
             onClick={onClose}
@@ -94,13 +145,20 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
           </button>
         </div>
 
+        {/* Sticky Error Banner */}
+        {error && (
+          <div className="px-6 py-3 bg-rose-50 border-b border-rose-200 flex-shrink-0">
+            <p className="text-sm font-bold text-rose-600 flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {error}
+            </p>
+          </div>
+        )}
+
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-grow">
-          {error && (
-            <div className="mb-4 bg-rose-50 text-rose-600 p-3 rounded-xl text-sm font-medium border border-rose-200">
-              {error}
-            </div>
-          )}
 
           <div className="mb-6 p-4 bg-teal-50 border border-teal-100 rounded-xl">
             <h4 className="font-bold text-teal-900 mb-1">{task.title}</h4>
@@ -109,6 +167,64 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
 
           <form id="completion-form" onSubmit={handleSubmit} className="space-y-6">
             
+            {/* Checklist */}
+            {task.is_inspection && checklist.length > 0 && (
+              <div className="border border-teal-100 rounded-xl overflow-hidden mb-6">
+                <div className="bg-teal-50 px-4 py-3 border-b border-teal-100">
+                  <h4 className="font-bold text-teal-900">Inspection Checklist</h4>
+                </div>
+                <div className="divide-y divide-gray-100 bg-white">
+                  {checklist.map((item, index) => (
+                    <div 
+                      key={item.id} 
+                      id={`checklist-item-${item.id}`} 
+                      className={`p-4 transition-colors ${missingItemIds.includes(item.id) ? 'bg-rose-50/30 ring-2 ring-inset ring-rose-400 rounded-lg m-1' : ''}`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                        <span className="font-medium text-gray-800 flex-grow">{index + 1}. {item.text}</span>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button type="button" onClick={() => { handleChecklistChange(item.id, 'status', 'PASS'); setMissingItemIds(prev => prev.filter(id => id !== item.id)); }} className={`px-3 py-1 text-sm font-bold rounded-lg border transition-colors ${item.status === 'PASS' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>PASS</button>
+                          <button type="button" onClick={() => { handleChecklistChange(item.id, 'status', 'FAIL'); setMissingItemIds(prev => prev.filter(id => id !== item.id)); }} className={`px-3 py-1 text-sm font-bold rounded-lg border transition-colors ${item.status === 'FAIL' ? 'bg-rose-500 text-white border-rose-500' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>FAIL</button>
+                          <button type="button" onClick={() => { handleChecklistChange(item.id, 'status', 'NA'); setMissingItemIds(prev => prev.filter(id => id !== item.id)); }} className={`px-3 py-1 text-sm font-bold rounded-lg border transition-colors ${item.status === 'NA' ? 'bg-gray-500 text-white border-gray-500' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>N/A</button>
+                        </div>
+                      </div>
+                      {missingItemIds.includes(item.id) && item.status === 'PENDING' && (
+                        <p className="text-xs font-bold text-rose-500 mt-2 flex items-center">
+                          <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          Please select Pass/Fail/N/A
+                        </p>
+                      )}
+                      
+                      {item.status === 'FAIL' && (
+                        <div className="mt-3 bg-rose-50/50 p-3 rounded-lg border border-rose-100 space-y-3">
+                          <div>
+                            <label className="block text-xs font-bold text-rose-700 mb-1">Failure Notes (Required)</label>
+                            <textarea 
+                              required
+                              value={item.notes || ''}
+                              onChange={e => handleChecklistChange(item.id, 'notes', e.target.value)}
+                              className="w-full text-sm px-2 py-1.5 border border-rose-200 rounded focus:ring-1 focus:ring-rose-500 focus:outline-none"
+                              rows="2"
+                              placeholder="Explain what failed..."
+                            ></textarea>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-rose-700 mb-1">Attach Photo (Optional)</label>
+                            <input 
+                              type="file" 
+                              accept="image/*"
+                              onChange={e => handleChecklistChange(item.id, 'photoFile', e.target.files[0])}
+                              className="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-rose-100 file:text-rose-700 hover:file:bg-rose-200"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Runtime */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Update Runtime Reading (optional)</label>
@@ -128,8 +244,9 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
             </div>
 
             {/* Downtime */}
-            <div className="border-t border-gray-100 pt-6">
-              <label className="block text-sm font-bold text-gray-700 mb-3">Downtime Duration (optional)</label>
+            {!task.is_inspection && (
+              <div className="border-t border-gray-100 pt-6">
+                <label className="block text-sm font-bold text-gray-700 mb-3">Downtime Duration (optional)</label>
               <div className="grid grid-cols-2 gap-4 mb-2">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Started</label>
@@ -154,12 +271,14 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
                 <p className="text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1.5 rounded-md inline-block">
                   → Calculated: {calculatedDowntime()} hrs
                 </p>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Parts Used */}
-            <div className="border-t border-gray-100 pt-6">
-              <div className="flex justify-between items-center mb-3">
+            {!task.is_inspection && (
+              <div className="border-t border-gray-100 pt-6">
+                <div className="flex justify-between items-center mb-3">
                 <label className="block text-sm font-bold text-gray-700">Parts Used</label>
                 <button 
                   type="button" 
@@ -216,6 +335,7 @@ export default function TaskCompletionModal({ task, onClose, onSuccess }) {
                 </div>
               )}
             </div>
+            )}
 
             {/* Completion Notes */}
             <div className="border-t border-gray-100 pt-6">
