@@ -16,7 +16,7 @@ def get_kpis(request):
     low_stock_parts = SparePart.objects.filter(current_stock__lte=F('reorder_level')).count()
 
     # MTTR & MTBF Logic
-    downtimes = DowntimeLog.objects.exclude(end_time__isnull=True)
+    downtimes = DowntimeLog.objects.filter(start_time__isnull=False, end_time__isnull=False)
     total_downtime_hours = 0
     total_breakdowns = downtimes.count()
 
@@ -34,7 +34,7 @@ def get_kpis(request):
     equipment_costs = []
     for eq in Equipment.objects.all():
         labor_cost = 0
-        tasks = eq.repair_tasks.exclude(end_time__isnull=True, start_time__isnull=True)
+        tasks = eq.repair_tasks.filter(start_time__isnull=False, end_time__isnull=False)
         for task in tasks:
             if task.technician and hasattr(task.technician, 'technician_profile'):
                 duration = (task.end_time - task.start_time).total_seconds() / 3600

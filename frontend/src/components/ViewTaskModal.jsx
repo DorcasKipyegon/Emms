@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function ViewTaskModal({ task, onClose }) {
   const getStatusColor = (status) => {
@@ -71,6 +72,29 @@ export default function ViewTaskModal({ task, onClose }) {
           )}
 
         </div>
+
+        {task.source_request_info && (
+          <div className="px-6 pb-4">
+            <h4 className="text-sm font-bold text-gray-900 mb-2">Origin</h4>
+            <div className="bg-[#0a1c2e] p-4 rounded-xl border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex-grow">
+                <p className="text-sm text-gray-300 font-medium mb-1">
+                  This task was created from a {task.source_request_info.is_from_inspection ? 'failed inspection' : 'Worker Report'} submitted by <span className="text-white font-bold">{task.source_request_info.reported_by_name}</span> on {new Date(task.source_request_info.created_at).toLocaleDateString()}:
+                </p>
+                <p className="text-xs text-gray-400 italic bg-gray-900/50 p-2 rounded line-clamp-2">
+                  "{task.source_request_info.description}"
+                </p>
+              </div>
+              <Link 
+                to="/requests"
+                className="whitespace-nowrap px-4 py-2 text-xs font-bold text-[#0a1c2e] bg-[#13e39d] hover:bg-[#10c88a] rounded-lg shadow-sm transition-colors"
+                onClick={onClose}
+              >
+                View original report
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end">

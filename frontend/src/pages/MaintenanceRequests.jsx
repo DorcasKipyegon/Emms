@@ -161,7 +161,8 @@ export default function MaintenanceRequests() {
             description: approvingRequest.description,
             equipment: approvingRequest.equipment,
             priority: approvingRequest.suggested_priority,
-            source: 'REACTIVE'
+            source: 'REACTIVE',
+            sourceRequest: approvingRequest
           }}
           onClose={() => setApprovingRequest(null)}
           onSuccess={handleApproveSuccess}

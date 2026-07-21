@@ -51,6 +51,7 @@ export default function AddTaskModal({ onClose, onSuccess, technicians, initialD
       technician: assignType === 'INDIVIDUAL' ? (technicianId || null) : null,
       team: assignType === 'TEAM' ? (teamId || null) : null,
       source,
+      source_request: initialData.sourceRequest?.id || null,
       priority
     };
 
@@ -87,6 +88,28 @@ export default function AddTaskModal({ onClose, onSuccess, technicians, initialD
           {error && (
             <div className="mb-4 bg-rose-50 text-rose-600 p-3 rounded-xl text-sm font-medium border border-rose-200">
               {error}
+            </div>
+          )}
+
+          {initialData.sourceRequest && (
+            <div className="mb-6 border-l-4 p-4 rounded-r-xl bg-[#0a1c2e] border-[#13e39d]">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 mt-0.5 mr-3 flex-shrink-0 text-[#13e39d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {initialData.sourceRequest.source_inspection ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  )}
+                </svg>
+                <div>
+                  <h4 className="text-white font-bold text-sm">
+                    {initialData.sourceRequest.source_inspection ? 'Created from failed inspection item' : 'Created from Worker Report'}
+                  </h4>
+                  <p className="text-gray-300 text-xs mt-1">
+                    Submitted by <span className="text-white font-medium">{initialData.sourceRequest.reported_by_name || 'System'}</span> on {initialData.sourceRequest.created_at ? new Date(initialData.sourceRequest.created_at).toLocaleDateString() : new Date().toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

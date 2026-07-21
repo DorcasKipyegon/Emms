@@ -66,6 +66,7 @@ class RepairTask(models.Model):
     team = models.ForeignKey('users.MaintenanceTeam', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
     schedule = models.ForeignKey(MaintenanceSchedule, on_delete=models.SET_NULL, null=True, blank=True, help_text="Linked if this is a preventive maintenance task")
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='REACTIVE')
+    source_request = models.ForeignKey('MaintenanceRequest', on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_tasks')
     
     PRIORITY_CHOICES = (
         ('CRITICAL', 'Critical'),
@@ -157,6 +158,7 @@ class MaintenanceRequest(models.Model):
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     rejection_reason = models.TextField(blank=True, null=True)
+    photo = models.ImageField(upload_to='request_photos/', blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

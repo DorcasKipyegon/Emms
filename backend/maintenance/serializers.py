@@ -74,6 +74,24 @@ class RepairTaskSerializer(serializers.ModelSerializer):
     parts_used = PartUsageSerializer(many=True, read_only=True)
     inspection_report = InspectionReportSerializer(read_only=True)
     checklist_items = TaskChecklistItemSerializer(many=True, read_only=True)
+    source_request_info = serializers.SerializerMethodField()
+
+    def get_source_request_info(self, obj):
+        if obj.source_request:
+            reporter_name = 'System'
+            if obj.source_request.reported_by:
+                reporter_name = f"{obj.source_request.reported_by.first_name} {obj.source_request.reported_by.last_name}".strip()
+                if not reporter_name:
+                    reporter_name = obj.source_request.reported_by.username
+            return {
+                'id': obj.source_request.id,
+                'title': obj.source_request.title,
+                'description': obj.source_request.description,
+                'reported_by_name': reporter_name,
+                'created_at': obj.source_request.created_at,
+                'is_from_inspection': obj.source_request.source_inspection_id is not None
+            }
+        return None
 
     def get_technician_name(self, obj):
         if obj.technician:

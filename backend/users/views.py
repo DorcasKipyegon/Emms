@@ -134,9 +134,88 @@ class UserViewSet(viewsets.ModelViewSet):
             try:
                 send_system_sms(phone_number, sms_message)
             except Exception as e:
-                print(f"Failed to send SMS invite: {e}")
-                
-        return Response({'message': 'Technician invited successfully. An email has been sent.'})
+                print(f"Setup Link for {email}: {setup_link}")
+        
+        return Response({'message': 'Technician invited successfully.', 'setup_link': setup_link})
+
+    @action(detail=False, methods=['post'])
+    def invite_worker(self, request):
+        if request.user.role not in ['MANAGER', 'ADMIN']:
+            return Response({'error': 'Only managers can invite workers.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name', '')
+        email = request.data.get('email')
+        phone_number = request.data.get('phone_number')
+        
+        if not email or not first_name:
+            return Response({'error': 'First name and email are required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if User.objects.filter(email__iexact=email).exists():
+            return Response({'error': 'A user with this email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Generate a unique username from email
+        base_username = email.split('@')[0]
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+            
+        user = User.objects.create(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=phone_number,
+            role='WORKER',
+            is_active=False  # Start inactive
+        )
+        user.set_unusable_password()
+        user.save()
+        
+        # Generate token
+        token_generator = PasswordResetTokenGenerator()
+        token = token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        frontend_url = request.META.get('HTTP_ORIGIN', 'http://localhost:5173')
+        setup_link = f"{frontend_url}/setup-account?uidb64={uid}&token={token}"
+        
+        subject = 'Welcome to EMMS.PRO - Set Up Your Account'
+        message = f'Hello {first_name},\n\nYou have been invited to join EMMS.PRO as a Worker.\n\nPlease click the link below to set up your password and activate your account:\n{setup_link}\n\nIf you did not expect this invitation, please ignore this email.'
+        
+        html_message = f"""
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; text-align: center;">
+            <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; padding: 40px 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="margin-bottom: 24px;">
+                    <span style="background-color: #0f172a; color: #2dd4bf; font-weight: 800; font-size: 20px; padding: 12px 16px; border-radius: 50%; display: inline-block; letter-spacing: 1px;">EMMS</span>
+                </div>
+                <h2 style="color: #0f172a; font-size: 24px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">Welcome to EMMS.PRO!</h2>
+                <p style="color: #475569; font-size: 16px; line-height: 1.5; margin-bottom: 32px; font-weight: 500;">
+                    Hello {first_name},<br><br>
+                    You have been invited to join EMMS as a Worker. To get started, please set up your account password by clicking the button below.
+                </p>
+                <a href="{setup_link}" style="display: inline-block; background-color: #2dd4bf; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 700; padding: 16px 32px; border-radius: 12px; width: 80%; max-width: 300px; box-sizing: border-box;">
+                    Set Up Account
+                </a>
+            </div>
+        </div>
+        """
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+            html_message=html_message
+        )
+        
+        # For development logging
+        print(f"Setup Link for Worker {email}: {setup_link}")
+        
+        return Response({'message': 'Worker invited successfully.', 'setup_link': setup_link})
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def request_password_reset(self, request):

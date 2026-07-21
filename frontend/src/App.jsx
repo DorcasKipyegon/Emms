@@ -16,6 +16,8 @@ import TechnicianList from './pages/TechnicianList';
 import TeamManagement from './pages/TeamManagement';
 import InspectionTemplates from './pages/InspectionTemplates';
 import MaintenanceRequests from './pages/MaintenanceRequests';
+import WorkerDashboard from './pages/WorkerDashboard';
+import WorkerList from './pages/WorkerList';
 
 // A wrapper to protect routes and redirect if not logged in
 const ProtectedRoute = ({ children }) => {
@@ -37,9 +39,14 @@ function AppRoutes() {
       {/* Dynamic Homepage based on Role */}
       <Route path="/" element={
         <ProtectedRoute>
-          {user?.role === 'TECHNICIAN' ? <Navigate to="/tasks" /> : <Dashboard />}
+          {user?.role === 'TECHNICIAN' ? <Navigate to="/tasks" /> : 
+           user?.role === 'WORKER' ? <Navigate to="/worker-dashboard" /> : 
+           <Dashboard />}
         </ProtectedRoute>
       } />
+      
+      {/* Worker routes */}
+      <Route path="/worker-dashboard" element={<ProtectedRoute><WorkerDashboard /></ProtectedRoute>} />
       
       <Route path="/equipment" element={<ProtectedRoute><EquipmentList /></ProtectedRoute>} />
       <Route path="/inventory" element={<ProtectedRoute><InventoryList /></ProtectedRoute>} />
@@ -47,6 +54,7 @@ function AppRoutes() {
       <Route path="/checklists" element={<ProtectedRoute><InspectionTemplates /></ProtectedRoute>} />
       <Route path="/requests" element={<ProtectedRoute><MaintenanceRequests /></ProtectedRoute>} />
       <Route path="/technicians" element={<ProtectedRoute><TechnicianList /></ProtectedRoute>} />
+      <Route path="/workers" element={<ProtectedRoute><WorkerList /></ProtectedRoute>} />
       <Route path="/teams" element={<ProtectedRoute><TeamManagement /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       
