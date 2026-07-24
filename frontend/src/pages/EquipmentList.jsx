@@ -50,6 +50,10 @@ export default function EquipmentList() {
     frequency_days: '', frequency_hours: '', inspection_template: ''
   });
 
+  // QR Modal State
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [qrEquipment, setQrEquipment] = useState(null);
+
   const fetchEquipment = async () => {
     try {
       const response = await api.get('equipment/');
@@ -215,6 +219,19 @@ export default function EquipmentList() {
     },
     { header: 'Location', accessor: 'location' },
     { header: 'Runtime (Hrs)', accessor: 'current_runtime_hours' },
+    { 
+      header: 'Active User', 
+      render: (row) => (
+        row.active_session_user ? (
+          <span className="flex items-center text-sm text-green-600 font-medium">
+            <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+            {row.active_session_user}
+          </span>
+        ) : (
+          <span className="text-gray-400 text-sm">None</span>
+        )
+      ) 
+    },
     {
       header: 'Actions',
       render: (row) => (
@@ -236,6 +253,12 @@ export default function EquipmentList() {
             className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 transition-colors"
           >
             📅 PMs
+          </button>
+          <button 
+            onClick={() => { setQrEquipment(row); setIsQrOpen(true); }}
+            className="text-purple-600 hover:text-purple-800 text-sm font-medium flex items-center bg-purple-50 px-3 py-1 rounded-full border border-purple-200 transition-colors"
+          >
+            📱 QR
           </button>
         </div>
       )
@@ -657,6 +680,58 @@ export default function EquipmentList() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {isQrOpen && qrEquipment && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setIsQrOpen(false)}></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full">
+              <div className="bg-white px-6 pt-5 pb-6">
+                <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                  <h3 className="text-xl leading-6 font-bold text-gray-900">QR Code</h3>
+                  <button onClick={() => setIsQrOpen(false)} className="text-gray-400 hover:text-gray-500 transition-colors">
+                    <span className="sr-only">Close</span>
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="text-center">
+                  <p className="text-sm text-gray-500 mb-4">
+                    {qrEquipment.name} ({qrEquipment.serial_number})
+                  </p>
+                  
+                  {qrEquipment.qr_code ? (
+                    <div className="flex justify-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <img src={qrEquipment.qr_code.startsWith('http') ? qrEquipment.qr_code : `http://localhost:8000${qrEquipment.qr_code}`} alt="QR Code" className="w-48 h-48 object-contain" />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-48 bg-gray-50 rounded-xl border border-gray-100 text-gray-400">
+                      <p>No QR Code generated</p>
+                    </div>
+                  )}
+                  
+                  <div className="mt-6 flex justify-center gap-3">
+                    <button onClick={() => window.open(`http://localhost:3000/q/${qrEquipment.public_id}`, '_blank')} className="px-4 py-2 bg-blue-50 text-blue-600 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors">
+                      Open Portal
+                    </button>
+                    {qrEquipment.qr_code && (
+                      <a href={qrEquipment.qr_code.startsWith('http') ? qrEquipment.qr_code : `http://localhost:8000${qrEquipment.qr_code}`} download={`${qrEquipment.serial_number}_qr.png`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-indigo-600 text-white font-medium text-sm rounded-lg hover:bg-indigo-700 transition-colors">
+                        Download
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -18,6 +18,7 @@ import InspectionTemplates from './pages/InspectionTemplates';
 import MaintenanceRequests from './pages/MaintenanceRequests';
 import WorkerDashboard from './pages/WorkerDashboard';
 import WorkerList from './pages/WorkerList';
+import QRPortal from './pages/QRPortal';
 
 // A wrapper to protect routes and redirect if not logged in
 const ProtectedRoute = ({ children }) => {
@@ -25,6 +26,13 @@ const ProtectedRoute = ({ children }) => {
   if (loading) return <div className="h-screen w-screen bg-gray-950 flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>;
   if (!user) return <Navigate to="/login" />;
   return <Layout>{children}</Layout>;
+};
+
+const SimpleProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="h-screen w-screen bg-gray-950 flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>;
+  if (!user) return <Navigate to="/login" />;
+  return <>{children}</>;
 };
 
 function AppRoutes() {
@@ -61,6 +69,9 @@ function AppRoutes() {
       {/* Technician specific routes */}
       <Route path="/my-equipment" element={<ProtectedRoute><TechnicianEquipmentList /></ProtectedRoute>} />
       <Route path="/my-equipment/:id" element={<ProtectedRoute><TechnicianEquipmentDetail /></ProtectedRoute>} />
+      
+      {/* Public QR Portal */}
+      <Route path="/q/:public_id" element={<SimpleProtectedRoute><QRPortal /></SimpleProtectedRoute>} />
       
       <Route path="/settings" element={<ProtectedRoute><div className="flex h-full items-center justify-center text-gray-400">Settings coming soon...</div></ProtectedRoute>} />
     </Routes>

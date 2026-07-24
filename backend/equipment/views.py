@@ -1,8 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import Category, Equipment, EquipmentDocument
-from .serializers import CategorySerializer, EquipmentSerializer, EquipmentDocumentSerializer
+from .models import Category, Equipment, EquipmentDocument, AssetSession
+from .serializers import CategorySerializer, EquipmentSerializer, EquipmentDocumentSerializer, PublicEquipmentSerializer, AssetSessionSerializer
+from django.utils import timezone
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -112,3 +113,39 @@ class EquipmentDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = EquipmentDocumentSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+
+class PublicEquipmentDetailView(generics.RetrieveAPIView):
+    queryset = Equipment.objects.all()
+    serializer_class = PublicEquipmentSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'public_id'
+
+class AssetSessionViewSet(viewsets.ModelViewSet):
+    queryset = AssetSession.objects.all()
+    serializer_class = AssetSessionSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'])
+    def check_in(self, request):
+        equipment_id = request.data.get('equipment_id')
+        if not equipment_id:
+            return Response({'error': 'equipment_id required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Close any existing active session for this equipment
+        AssetSession.objects.filter(equipment_id=equipment_id, end_time__isnull=True).update(end_time=timezone.now())
+        
+        # Create new session
+        session = AssetSession.objects.create(equipment_id=equipment_id, user=request.user)
+        return Response(AssetSessionSerializer(session).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'])
+    def check_out(self, request):
+        equipment_id = request.data.get('equipment_id')
+        if not equipment_id:
+            return Response({'error': 'equipment_id required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        sessions = AssetSession.objects.filter(equipment_id=equipment_id, user=request.user, end_time__isnull=True)
+        if sessions.exists():
+            sessions.update(end_time=timezone.now())
+            return Response({'message': 'Checked out successfully'})
+        return Response({'message': 'No active session found'}, status=status.HTTP_400_BAD_REQUEST)

@@ -212,6 +212,24 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status_param)
         return queryset
 
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        public_id = data.get('public_id')
+        
+        if public_id and not data.get('equipment'):
+            from equipment.models import Equipment
+            try:
+                eq = Equipment.objects.get(public_id=public_id)
+                data['equipment'] = eq.id
+            except Equipment.DoesNotExist:
+                return Response({'error': 'Invalid public_id'}, status=status.HTTP_400_BAD_REQUEST)
+                
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def perform_create(self, serializer):
         request_obj = serializer.save(reported_by=self.request.user)
         self._notify_managers(request_obj)

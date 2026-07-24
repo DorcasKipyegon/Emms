@@ -1,5 +1,9 @@
 from django.db import models
-
+from django.conf import settings
+import uuid
+import qrcode
+from io import BytesIO
+from django.core.files import File
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -31,8 +35,23 @@ class Equipment(models.Model):
     total_downtime_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     is_active = models.BooleanField(default=True)
     
+    # New IT Equipment & QR features
+    public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    metadata = models.JSONField(blank=True, default=dict, help_text="Store arbitrary properties like OS, IP address, etc.")
+    qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.qr_code:
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+            qr = qrcode.make(f"{frontend_url}/q/{self.public_id}")
+            canvas = BytesIO()
+            qr.save(canvas, format='PNG')
+            canvas.seek(0)
+            self.qr_code.save(f'qr_{self.public_id}.png', File(canvas), save=False)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.serial_number})"
@@ -45,3 +64,12 @@ class EquipmentDocument(models.Model):
 
     def __str__(self):
         return f"{self.title} for {self.equipment.name}"
+
+class AssetSession(models.Model):
+    equipment = models.ForeignKey(Equipment, on_delete=models.CASCADE, related_name='sessions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='asset_sessions')
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} on {self.equipment.name}"
