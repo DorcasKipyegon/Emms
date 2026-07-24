@@ -1,5 +1,6 @@
 import Sidebar from './Sidebar';
 import Header from './Header';
+import AIChatWidget from './AIChatWidget';
 
 export default function Layout({ children }) {
   return (
@@ -11,6 +12,7 @@ export default function Layout({ children }) {
           {children}
         </main>
       </div>
+      <AIChatWidget />
     </div>
   );
 }

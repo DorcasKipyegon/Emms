@@ -215,6 +215,11 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         request_obj = serializer.save(reported_by=self.request.user)
         self._notify_managers(request_obj)
+        
+        # Start AI Triage in background
+        import threading
+        from emms_backend.ai_service import triage_request
+        threading.Thread(target=triage_request, args=(request_obj.id,)).start()
 
     def _notify_managers(self, request_obj):
         from emms_backend.notifications import send_system_sms, send_system_email
@@ -229,3 +234,16 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
                 send_system_email(manager.email, subject, message)
             if manager.phone_number:
                 send_system_sms(manager.phone_number, message)
+from rest_framework.views import APIView
+from emms_backend.ai_chat_service import process_chat_message
+
+class AIChatView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        messages = request.data.get('messages', [])
+        if not messages:
+            return Response({'error': 'Messages are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        reply = process_chat_message(messages, request.user)
+        return Response({'reply': reply})

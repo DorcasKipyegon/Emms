@@ -4,7 +4,7 @@ from .views import (
     MaintenanceScheduleViewSet, RepairTaskViewSet, 
     InspectionReportViewSet, PartUsageViewSet,
     InspectionTemplateViewSet, TaskChecklistItemViewSet,
-    MaintenanceRequestViewSet
+    MaintenanceRequestViewSet, AIChatView
 )
 
 router = DefaultRouter()
@@ -17,5 +17,6 @@ router.register(r'task-checklist-items', TaskChecklistItemViewSet)
 router.register(r'maintenance-requests', MaintenanceRequestViewSet)
 
 urlpatterns = [
+    path('ai-chat/', AIChatView.as_view(), name='ai-chat'),
     path('', include(router.urls)),
 ]

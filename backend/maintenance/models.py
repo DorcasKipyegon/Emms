@@ -77,6 +77,7 @@ class RepairTask(models.Model):
     
     title = models.CharField(max_length=200)
     description = models.TextField()
+    ai_troubleshooting_steps = models.TextField(blank=True, null=True, help_text="AI generated troubleshooting steps")
     is_inspection = models.BooleanField(default=False)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
@@ -159,6 +160,9 @@ class MaintenanceRequest(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     rejection_reason = models.TextField(blank=True, null=True)
     photo = models.ImageField(upload_to='request_photos/', blank=True, null=True)
+    
+    ai_suggested_priority = models.CharField(max_length=20, choices=RepairTask.PRIORITY_CHOICES, null=True, blank=True)
+    ai_troubleshooting_steps = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

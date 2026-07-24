@@ -12,6 +12,22 @@ export default function MaintenanceRequests() {
   
   const [rejectingRequest, setRejectingRequest] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [error, setError] = useState(null);
+  
+  const parseAISteps = (stepsStr) => {
+    if (!stepsStr) return [];
+    try {
+      let parsed = stepsStr;
+      if (typeof parsed === 'string' && parsed.startsWith('[')) {
+        parsed = parsed.replace(/'/g, '"');
+        parsed = JSON.parse(parsed);
+      }
+      if (Array.isArray(parsed)) return parsed;
+      return stepsStr.split('\n').filter(s => s.trim());
+    } catch (e) {
+      return stepsStr.split('\n').filter(s => s.trim());
+    }
+  };
 
   useEffect(() => {
     fetchRequests();
@@ -120,6 +136,42 @@ export default function MaintenanceRequests() {
                   <h3 className="font-bold text-gray-900 mb-2">{req.title}</h3>
                   <p className="text-sm text-gray-600 mb-4 whitespace-pre-wrap line-clamp-4">{req.description}</p>
                   
+                  {req.ai_suggested_priority && (
+                    <div className="mb-4 bg-[#f0f9ff] border border-[#bce3ff] rounded-xl p-4">
+                      <div className="flex items-center mb-2">
+                        <svg className="w-4 h-4 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <h4 className="font-bold text-blue-900 text-xs uppercase tracking-wider">AI Insights</h4>
+                      </div>
+                      <p className="text-xs text-blue-800 font-semibold mb-2">
+                        Priority: <span className="bg-blue-100 px-2 py-0.5 rounded">{req.ai_suggested_priority}</span>
+                      </p>
+                      
+                      {(() => {
+                        const steps = parseAISteps(req.ai_troubleshooting_steps);
+                        return (
+                          <details className="group [&_summary::-webkit-details-marker]:hidden">
+                            <summary className="flex items-center justify-between cursor-pointer select-none border-t border-[#bce3ff]/50 pt-2">
+                              <span className="text-[10px] font-bold uppercase text-blue-900 tracking-wider">Troubleshooting ({steps.length})</span>
+                              <svg className="w-4 h-4 text-blue-500 transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </summary>
+                            <div className="pt-2">
+                              <ul className="list-disc pl-4 text-xs text-blue-800 space-y-1.5">
+                                {steps.map((step, idx) => (
+                                  <li key={idx} className="leading-relaxed">{step}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </details>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  
+
                   <div className="text-xs text-gray-500 mb-4">
                     Reported by: <span className="font-semibold text-gray-700">{req.reported_by_name || 'System'}</span>
                   </div>
@@ -159,8 +211,9 @@ export default function MaintenanceRequests() {
           initialData={{
             title: approvingRequest.title,
             description: approvingRequest.description,
+            ai_troubleshooting_steps: approvingRequest.ai_troubleshooting_steps,
             equipment: approvingRequest.equipment,
-            priority: approvingRequest.suggested_priority,
+            priority: approvingRequest.ai_suggested_priority || approvingRequest.suggested_priority,
             source: 'REACTIVE',
             sourceRequest: approvingRequest
           }}

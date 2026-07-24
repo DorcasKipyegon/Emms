@@ -52,7 +52,8 @@ export default function AddTaskModal({ onClose, onSuccess, technicians, initialD
       team: assignType === 'TEAM' ? (teamId || null) : null,
       source,
       source_request: initialData.sourceRequest?.id || null,
-      priority
+      priority,
+      ai_troubleshooting_steps: initialData.ai_troubleshooting_steps || null
     };
 
     try {
@@ -138,6 +139,20 @@ export default function AddTaskModal({ onClose, onSuccess, technicians, initialD
                 required
               ></textarea>
             </div>
+            
+            {initialData.ai_troubleshooting_steps && (
+              <div className="bg-[#f0f9ff] border border-[#bce3ff] rounded-lg p-3">
+                <div className="flex items-center mb-1">
+                  <svg className="w-3.5 h-3.5 text-blue-500 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <h4 className="font-bold text-blue-900 text-[10px] uppercase tracking-wider">AI Troubleshooting Suggestions</h4>
+                </div>
+                <p className="text-xs text-blue-800 whitespace-pre-wrap leading-relaxed">
+                  {initialData.ai_troubleshooting_steps}
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

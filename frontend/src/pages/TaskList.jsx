@@ -103,6 +103,21 @@ export default function TaskList() {
     }
   };
 
+  const parseAISteps = (stepsStr) => {
+    if (!stepsStr) return [];
+    try {
+      let parsed = stepsStr;
+      if (typeof parsed === 'string' && parsed.startsWith('[')) {
+        parsed = parsed.replace(/'/g, '"');
+        parsed = JSON.parse(parsed);
+      }
+      if (Array.isArray(parsed)) return parsed;
+      return stepsStr.split('\n').filter(s => s.trim());
+    } catch (e) {
+      return stepsStr.split('\n').filter(s => s.trim());
+    }
+  };
+
   const renderPriority = (priority) => {
     if (!priority) return null;
     let icon;
@@ -279,6 +294,34 @@ export default function TaskList() {
               </div>
               
               <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">{task.description}</p>
+              
+              {task.ai_troubleshooting_steps && (() => {
+                const steps = parseAISteps(task.ai_troubleshooting_steps);
+                return (
+                  <details className="mb-4 group bg-[#f0f9ff] border border-[#bce3ff] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer select-none">
+                      <div className="flex items-center">
+                        <svg className="w-3.5 h-3.5 text-blue-500 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <h4 className="font-bold text-blue-900 text-[10px] uppercase tracking-wider">
+                          AI Suggestions ({steps.length})
+                        </h4>
+                      </div>
+                      <svg className="w-4 h-4 text-blue-500 transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </summary>
+                    <div className="px-3 pb-3 border-t border-[#bce3ff]/50 pt-2 bg-white/50">
+                      <ul className="list-disc pl-4 text-xs text-blue-800 space-y-1.5">
+                        {steps.map((step, idx) => (
+                          <li key={idx} className="leading-relaxed">{step}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </details>
+                );
+              })()}
               
               {task.status === 'ON_HOLD' && task.on_hold_reason && (
                 <div className="bg-gray-50 text-gray-600 text-xs px-3 py-2 rounded-lg mb-4 flex items-center">

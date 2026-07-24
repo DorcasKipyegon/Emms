@@ -2,6 +2,23 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 export default function ViewTaskModal({ task, onClose }) {
+  if (!task) return null;
+
+  const parseAISteps = (stepsStr) => {
+    if (!stepsStr) return [];
+    try {
+      let parsed = stepsStr;
+      if (typeof parsed === 'string' && parsed.startsWith('[')) {
+        parsed = parsed.replace(/'/g, '"');
+        parsed = JSON.parse(parsed);
+      }
+      if (Array.isArray(parsed)) return parsed;
+      return stepsStr.split('\n').filter(s => s.trim());
+    } catch (e) {
+      return stepsStr.split('\n').filter(s => s.trim());
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'COMPLETED': return 'bg-emerald-100 text-emerald-800';
@@ -39,6 +56,32 @@ export default function ViewTaskModal({ task, onClose }) {
               </span>
             </div>
             <p className="text-gray-600 text-sm whitespace-pre-wrap">{task.description}</p>
+            
+            {task.ai_troubleshooting_steps && (() => {
+              const steps = parseAISteps(task.ai_troubleshooting_steps);
+              return (
+                <details className="mt-4 group bg-[#f0f9ff] border border-[#bce3ff] rounded-lg overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex items-center justify-between p-3 cursor-pointer select-none">
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <h4 className="font-bold text-blue-900 text-xs uppercase tracking-wider">AI Suggestions ({steps.length})</h4>
+                    </div>
+                    <svg className="w-4 h-4 text-blue-500 transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="px-3 pb-3 border-t border-[#bce3ff]/50 pt-2 bg-white/50">
+                    <ul className="list-disc pl-5 text-sm text-blue-800 space-y-1.5">
+                      {steps.map((step, idx) => (
+                        <li key={idx} className="leading-relaxed">{step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </details>
+              );
+            })()}
           </div>
 
           <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
