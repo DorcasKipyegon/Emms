@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 export default function InspectionTemplates() {
   const [templates, setTemplates] = useState([]);
@@ -14,10 +14,7 @@ export default function InspectionTemplates() {
 
   const fetchTemplates = async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      const res = await axios.get('http://127.0.0.1:8000/api/inspection-templates/', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('inspection-templates/');
       setTemplates(res.data);
     } catch (error) {
       console.error("Error fetching templates:", error);
@@ -61,7 +58,6 @@ export default function InspectionTemplates() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('access_token');
       const payload = {
         name,
         description,
@@ -74,13 +70,9 @@ export default function InspectionTemplates() {
       };
 
       if (editingTemplate) {
-        await axios.put(`http://127.0.0.1:8000/api/inspection-templates/${editingTemplate.id}/`, payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.put(`inspection-templates/${editingTemplate.id}/`, payload);
       } else {
-        await axios.post('http://127.0.0.1:8000/api/inspection-templates/', payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.post('inspection-templates/', payload);
       }
 
       setIsModalOpen(false);
@@ -94,10 +86,7 @@ export default function InspectionTemplates() {
   const handleDelete = async (id) => {
     if(!window.confirm("Are you sure you want to delete this template?")) return;
     try {
-      const token = localStorage.getItem('access_token');
-      await axios.delete(`http://127.0.0.1:8000/api/inspection-templates/${id}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`inspection-templates/${id}/`);
       fetchTemplates();
     } catch (err) {
       console.error(err);

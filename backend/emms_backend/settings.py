@@ -92,8 +92,8 @@ WSGI_APPLICATION = 'emms_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='emms_db'),
-        'USER': config('DB_USER', default='postgres'),
+        'NAME': config('DB_NAME', default='emms_db 3'),
+        'USER': config('DB_USER', default='mac'),
         'PASSWORD': config('DB_PASSWORD', default=''),
         'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='5432'),
@@ -183,6 +183,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='dorcaskipyegon708@gmail.com')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='lagat6439@gmail.com')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
