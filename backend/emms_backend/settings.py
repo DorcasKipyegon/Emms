@@ -26,8 +26,9 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-l*tt@$lla+db@_up2hwpm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
 
 # Application definition
 

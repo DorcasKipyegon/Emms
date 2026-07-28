@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import api from '../api';
 
-export default function DeleteWorkerModal({ Worker, onClose, onSuccess }) {
+export default function DeleteEmployeeModal({ Employee, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -9,10 +9,10 @@ export default function DeleteWorkerModal({ Worker, onClose, onSuccess }) {
     setLoading(true);
     setError(null);
     try {
-      await api.delete(`users/${Worker.id}/`);
+      await api.delete(`users/${Employee.id}/`);
       onSuccess();
     } catch (err) {
-      setError('Failed to delete Worker. They may be assigned to tasks.');
+      setError('Failed to delete Employee. They may be assigned to tasks.');
     } finally {
       setLoading(false);
     }
@@ -27,7 +27,7 @@ export default function DeleteWorkerModal({ Worker, onClose, onSuccess }) {
             <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            <h3 className="font-bold text-lg">Delete Worker</h3>
+            <h3 className="font-bold text-lg">Delete Employee</h3>
           </div>
           <button onClick={onClose} className="text-teal-100 hover:text-white transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,7 +43,7 @@ export default function DeleteWorkerModal({ Worker, onClose, onSuccess }) {
             </div>
           )}
           <p className="text-gray-700 font-medium">
-            Are you sure you want to delete <span className="font-bold text-gray-900">{Worker.first_name} {Worker.last_name}</span>?
+            Are you sure you want to delete <span className="font-bold text-gray-900">{Employee.first_name} {Employee.last_name}</span>?
           </p>
         </div>
 

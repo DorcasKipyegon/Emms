@@ -104,7 +104,7 @@ export default function AddTaskModal({ onClose, onSuccess, technicians, initialD
                 </svg>
                 <div>
                   <h4 className="text-white font-bold text-sm">
-                    {initialData.sourceRequest.source_inspection ? 'Created from failed inspection item' : 'Created from Worker Report'}
+                    {initialData.sourceRequest.source_inspection ? 'Created from failed inspection item' : 'Created from Employee Report'}
                   </h4>
                   <p className="text-gray-300 text-xs mt-1">
                     Submitted by <span className="text-white font-medium">{initialData.sourceRequest.reported_by_name || 'System'}</span> on {initialData.sourceRequest.created_at ? new Date(initialData.sourceRequest.created_at).toLocaleDateString() : new Date().toLocaleDateString()}

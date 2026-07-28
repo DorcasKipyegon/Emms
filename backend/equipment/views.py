@@ -121,9 +121,15 @@ class PublicEquipmentDetailView(generics.RetrieveAPIView):
     lookup_field = 'public_id'
 
 class AssetSessionViewSet(viewsets.ModelViewSet):
-    queryset = AssetSession.objects.all()
     serializer_class = AssetSessionSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = AssetSession.objects.all()
+        user_id = self.request.query_params.get('user', None)
+        if user_id is not None:
+            queryset = queryset.filter(user_id=user_id)
+        return queryset
 
     @action(detail=False, methods=['post'])
     def check_in(self, request):

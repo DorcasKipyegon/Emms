@@ -108,7 +108,7 @@ export default function Dashboard() {
                       <td className="px-6 py-4">{eq.breakdowns}</td>
                       <td className="px-6 py-4">Ksh {eq.labor_cost.toFixed(2)}</td>
                       <td className="px-6 py-4">Ksh {eq.part_cost.toFixed(2)}</td>
-                      <td className="px-6 py-4 font-bold text-rose-400">Ksh {eq.total_cost.toFixed(2)}</td>
+                      <td className="px-6 py-4 font-bold text-gray-900">Ksh {eq.total_cost.toFixed(2)}</td>
                     </tr>
                   ))}
                   {data.equipment_costs.length === 0 && (

@@ -7,6 +7,7 @@ export default function InventoryList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -40,7 +41,21 @@ export default function InventoryList() {
   };
 
   const openAddModal = () => {
+    setEditingId(null);
     setFormData({ name: '', description: '', current_stock: 0, reorder_level: 5, unit_cost: 0.00 });
+    setFormError('');
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (part) => {
+    setEditingId(part.id);
+    setFormData({
+      name: part.name,
+      description: part.description || '',
+      current_stock: part.current_stock,
+      reorder_level: part.reorder_level,
+      unit_cost: part.unit_cost
+    });
     setFormError('');
     setIsModalOpen(true);
   };
@@ -49,14 +64,19 @@ export default function InventoryList() {
     e.preventDefault();
     setFormError('');
     try {
-      await api.post('spare-parts/', formData);
+      if (editingId) {
+        await api.patch(`spare-parts/${editingId}/`, formData);
+      } else {
+        await api.post('spare-parts/', formData);
+      }
       setIsModalOpen(false);
+      setEditingId(null);
       // Reset form
       setFormData({ name: '', description: '', current_stock: 0, reorder_level: 5, unit_cost: 0.00 });
       // Refresh list
       fetchParts();
     } catch (err) {
-      setFormError('Failed to add part. Ensure SKU is unique.');
+      setFormError(`Failed to ${editingId ? 'update' : 'add'} part.`);
       console.error(err);
     }
   };
@@ -78,6 +98,18 @@ export default function InventoryList() {
       header: 'Unit Cost', 
       accessor: 'unit_cost',
       render: (row) => `Ksh ${row.unit_cost}`
+    },
+    {
+      header: 'Actions',
+      accessor: 'id',
+      render: (row) => (
+        <button 
+          onClick={() => openEditModal(row)}
+          className="text-teal-600 hover:text-teal-800 font-medium text-sm transition-colors"
+        >
+          Edit
+        </button>
+      )
     }
   ];
 
@@ -115,7 +147,7 @@ export default function InventoryList() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white border border-gray-200 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">Add Spare Part</h3>
+              <h3 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Spare Part' : 'Add Spare Part'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-900">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
@@ -146,7 +178,7 @@ export default function InventoryList() {
 
               <div className="pt-4 flex justify-end space-x-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
-                <button type="submit" className="bg-teal-400 hover:bg-teal-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Save Part</button>
+                <button type="submit" className="bg-teal-400 hover:bg-teal-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">{editingId ? 'Save Changes' : 'Save Part'}</button>
               </div>
             </form>
           </div>

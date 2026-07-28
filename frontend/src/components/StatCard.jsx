@@ -10,7 +10,7 @@ export default function StatCard({ title, value, change, trend, icon }) {
       <div>
         <h4 className="text-3xl font-bold text-gray-900">{value}</h4>
         {change && (
-          <p className={`text-sm mt-2 font-medium ${trend === 'up' ? 'text-emerald-500' : trend === 'down' ? 'text-rose-500' : 'text-gray-500'}`}>
+          <p className={`text-sm mt-2 font-medium ${trend === 'up' ? 'text-emerald-500' : trend === 'down' ? 'text-emerald-500' : 'text-gray-500'}`}>
             {trend === 'up' ? '↑' : trend === 'down' ? '↓' : ''} {change}
           </p>
         )}

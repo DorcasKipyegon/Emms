@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { useAuth } from '../contexts/AuthContext';
-import InviteWorkerModal from '../components/InviteWorkerModal';
-import EditWorkerModal from '../components/EditWorkerModal';
-import DeleteWorkerModal from '../components/DeleteWorkerModal';
+import InviteEmployeeModal from '../components/InviteEmployeeModal';
+import EditEmployeeModal from '../components/EditEmployeeModal';
+import DeleteEmployeeModal from '../components/DeleteEmployeeModal';
 
-export default function WorkerList() {
-  const [Workers, setWorkers] = useState([]);
+export default function EmployeeList() {
+  const [Employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -14,13 +14,13 @@ export default function WorkerList() {
   const [deletingTech, setDeletingTech] = useState(null);
   const { user } = useAuth();
 
-  const fetchWorkers = async () => {
+  const fetchEmployees = async () => {
     try {
       const response = await api.get('users/');
-      const techs = response.data.filter(u => u.role === 'WORKER');
-      setWorkers(techs);
+      const techs = response.data.filter(u => u.role === 'EMPLOYEE');
+      setEmployees(techs);
     } catch (err) {
-      setError('Failed to load Workers.');
+      setError('Failed to load Employees.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -29,7 +29,7 @@ export default function WorkerList() {
 
   useEffect(() => {
     if (user?.role === 'MANAGER' || user?.role === 'ADMIN') {
-      fetchWorkers();
+      fetchEmployees();
     }
   }, [user]);
 
@@ -45,9 +45,9 @@ export default function WorkerList() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-gray-200 pb-5">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900">Workers</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900">Employees</h2>
           <p className="text-gray-500 mt-1">
-            Manage your maintenance team and invite new Workers.
+            Manage your maintenance team and invite new Employees.
           </p>
         </div>
         <button 
@@ -55,7 +55,7 @@ export default function WorkerList() {
           className="bg-teal-400 hover:bg-teal-500 text-white font-bold py-2 px-5 rounded-xl shadow-sm hover:shadow transition-all flex items-center text-sm flex-shrink-0"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-          Invite Worker
+          Invite Employee
         </button>
       </div>
 
@@ -69,10 +69,10 @@ export default function WorkerList() {
         <div className="w-full h-64 flex items-center justify-center">
           <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-      ) : Workers.length === 0 ? (
+      ) : Employees.length === 0 ? (
         <div className="w-full h-64 flex flex-col items-center justify-center border border-gray-200 rounded-xl bg-white shadow-sm">
           <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-          <p className="text-gray-500 font-medium text-lg">No Workers found.</p>
+          <p className="text-gray-500 font-medium text-lg">No Employees found.</p>
           <p className="text-gray-400 text-sm mt-1">Click the invite button above to add someone to the team.</p>
         </div>
       ) : (
@@ -99,7 +99,7 @@ export default function WorkerList() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {Workers.map((tech) => (
+                {Employees.map((tech) => (
                   <tr key={tech.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -161,33 +161,33 @@ export default function WorkerList() {
       )}
 
       {showInviteModal && (
-        <InviteWorkerModal
+        <InviteEmployeeModal
           onClose={() => setShowInviteModal(false)}
           onSuccess={() => {
             setShowInviteModal(false);
-            fetchWorkers();
+            fetchEmployees();
           }}
         />
       )}
 
       {editingTech && (
-        <EditWorkerModal
-          Worker={editingTech}
+        <EditEmployeeModal
+          Employee={editingTech}
           onClose={() => setEditingTech(null)}
           onSuccess={() => {
             setEditingTech(null);
-            fetchWorkers();
+            fetchEmployees();
           }}
         />
       )}
 
       {deletingTech && (
-        <DeleteWorkerModal
-          Worker={deletingTech}
+        <DeleteEmployeeModal
+          Employee={deletingTech}
           onClose={() => setDeletingTech(null)}
           onSuccess={() => {
             setDeletingTech(null);
-            fetchWorkers();
+            fetchEmployees();
           }}
         />
       )}

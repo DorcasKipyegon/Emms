@@ -204,7 +204,7 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         
-        if self.request.user.role == 'WORKER':
+        if self.request.user.role == 'EMPLOYEE':
             queryset = queryset.filter(reported_by=self.request.user)
             
         status_param = self.request.query_params.get('status')

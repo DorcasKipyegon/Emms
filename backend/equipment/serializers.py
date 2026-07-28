@@ -21,7 +21,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
     def get_active_session_user(self, obj):
-        active_session = obj.sessions.filter(end_time__isnull=True).select_related('user').first()
+        active_session = obj.sessions.filter(end_time__isnull=True).order_by('-start_time').select_related('user').first()
         if active_session:
             return f"{active_session.user.first_name} {active_session.user.last_name}".strip() or active_session.user.username
         return None

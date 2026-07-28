@@ -75,8 +75,9 @@ export default function Sidebar() {
   const navigation = user?.role === 'TECHNICIAN' ? [
     { name: 'My Tasks', href: '/tasks', icon: tasksIcon },
     { name: 'My Equipment', href: '/my-equipment', icon: equipmentIcon }
-  ] : user?.role === 'WORKER' ? [
-    { name: 'My Reports', href: '/worker-dashboard', icon: requestsIcon }
+  ] : user?.role === 'EMPLOYEE' ? [
+    { name: 'My Reports', href: '/employee-dashboard', icon: requestsIcon },
+    { name: 'My Shift', href: '/my-shift', icon: equipmentIcon }
   ] : [
     { name: 'Dashboard', href: '/', icon: dashboardIcon },
     { name: 'Equipment', href: '/equipment', icon: equipmentIcon },
@@ -85,7 +86,7 @@ export default function Sidebar() {
     { name: 'Requests', href: '/requests', icon: requestsIcon, badge: pendingRequestsCount },
     { name: 'Checklists', href: '/checklists', icon: checklistsIcon },
     { name: 'Technicians', href: '/technicians', icon: usersIcon },
-    { name: 'Workers', href: '/workers', icon: usersIcon },
+    { name: 'Employees', href: '/employees', icon: usersIcon },
     { name: 'Teams', href: '/teams', icon: teamsIcon },
   ];
 

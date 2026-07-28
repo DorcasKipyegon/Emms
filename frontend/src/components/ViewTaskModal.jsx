@@ -122,7 +122,7 @@ export default function ViewTaskModal({ task, onClose }) {
             <div className="bg-[#0a1c2e] p-4 rounded-xl border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex-grow">
                 <p className="text-sm text-gray-300 font-medium mb-1">
-                  This task was created from a {task.source_request_info.is_from_inspection ? 'failed inspection' : 'Worker Report'} submitted by <span className="text-white font-bold">{task.source_request_info.reported_by_name}</span> on {new Date(task.source_request_info.created_at).toLocaleDateString()}:
+                  This task was created from a {task.source_request_info.is_from_inspection ? 'failed inspection' : 'Employee Report'} submitted by <span className="text-white font-bold">{task.source_request_info.reported_by_name}</span> on {new Date(task.source_request_info.created_at).toLocaleDateString()}:
                 </p>
                 <p className="text-xs text-gray-400 italic bg-gray-900/50 p-2 rounded line-clamp-2">
                   "{task.source_request_info.description}"

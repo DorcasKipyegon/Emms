@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import api from '../api';
 
 export default function EquipmentList() {
+  const navigate = useNavigate();
   const [equipment, setEquipment] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Add Equipment Modal State
+  // Add/Edit Equipment Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editEquipmentId, setEditEquipmentId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     serial_number: '',
@@ -54,6 +57,19 @@ export default function EquipmentList() {
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [qrEquipment, setQrEquipment] = useState(null);
 
+  // Actions Menu State
+  const [openActionId, setOpenActionId] = useState(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.action-menu-container')) {
+        setOpenActionId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const fetchEquipment = async () => {
     try {
       const response = await api.get('equipment/');
@@ -89,14 +105,19 @@ export default function EquipmentList() {
     e.preventDefault();
     setFormError('');
     try {
-      await api.post('equipment/', formData);
+      if (editEquipmentId) {
+        await api.patch(`equipment/${editEquipmentId}/`, formData);
+      } else {
+        await api.post('equipment/', formData);
+      }
       setIsModalOpen(false);
+      setEditEquipmentId(null);
       // Reset form
       setFormData({ name: '', serial_number: '', category: '', location: '', status: 'OPERATIONAL' });
       // Refresh list
       fetchEquipment();
     } catch (err) {
-      setFormError('Failed to add equipment. Ensure serial number is unique and all fields are filled.');
+      setFormError(`Failed to ${editEquipmentId ? 'update' : 'add'} equipment. Ensure serial number is unique and all fields are filled.`);
       console.error(err);
     }
   };
@@ -235,31 +256,61 @@ export default function EquipmentList() {
     {
       header: 'Actions',
       render: (row) => (
-        <div className="flex space-x-2">
+        <div className="relative action-menu-container">
           <button 
-            onClick={() => { setRuntimeEquipment(row); setNewRuntime(row.current_runtime_hours || ''); setIsRuntimeOpen(true); }}
-            className="text-amber-600 hover:text-amber-800 text-sm font-medium flex items-center bg-amber-50 px-3 py-1 rounded-full border border-amber-200 transition-colors"
+            onClick={() => setOpenActionId(openActionId === row.id ? null : row.id)}
+            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors focus:outline-none"
           >
-            ⏱️ Hours
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
           </button>
-          <button 
-            onClick={() => { setVaultEquipment(row); setIsVaultOpen(true); }}
-            className="text-teal-600 hover:text-teal-800 text-sm font-medium flex items-center bg-teal-50 px-3 py-1 rounded-full border border-teal-200 transition-colors"
-          >
-            📎 Vault ({row.documents?.length || 0})
-          </button>
-          <button 
-            onClick={() => handleOpenSchedules(row)}
-            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 transition-colors"
-          >
-            📅 PMs
-          </button>
-          <button 
-            onClick={() => { setQrEquipment(row); setIsQrOpen(true); }}
-            className="text-purple-600 hover:text-purple-800 text-sm font-medium flex items-center bg-purple-50 px-3 py-1 rounded-full border border-purple-200 transition-colors"
-          >
-            📱 QR
-          </button>
+          
+          {openActionId === row.id && (
+            <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+              <button 
+                onClick={() => { 
+                  navigate(`/equipment/${row.id}`);
+                  setOpenActionId(null); 
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Details
+              </button>
+              <button 
+                onClick={() => { setRuntimeEquipment(row); setNewRuntime(row.current_runtime_hours || ''); setIsRuntimeOpen(true); setOpenActionId(null); }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Update Hours
+              </button>
+              <button 
+                onClick={() => { setVaultEquipment(row); setIsVaultOpen(true); setOpenActionId(null); }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                Document Vault ({row.documents?.length || 0})
+              </button>
+              <button 
+                onClick={() => { handleOpenSchedules(row); setOpenActionId(null); }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                PM Schedules
+              </button>
+              <button 
+                onClick={() => { setQrEquipment(row); setIsQrOpen(true); setOpenActionId(null); }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                QR Code Portal
+              </button>
+            </div>
+          )}
         </div>
       )
     }
@@ -305,7 +356,11 @@ export default function EquipmentList() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setEditEquipmentId(null);
+              setFormData({ name: '', serial_number: '', category: '', location: '', status: 'OPERATIONAL' });
+              setIsModalOpen(true);
+            }}
             className="bg-teal-400 hover:bg-teal-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm shadow-teal-900/20 flex items-center"
           >
             + Add Equipment
@@ -357,7 +412,7 @@ export default function EquipmentList() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white border border-gray-200 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">Add New Equipment</h3>
+              <h3 className="text-lg font-bold text-gray-900">{editEquipmentId ? 'Edit Equipment' : 'Add New Equipment'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-900">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
@@ -688,50 +743,39 @@ export default function EquipmentList() {
 
       {/* QR Code Modal */}
       {isQrOpen && qrEquipment && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setIsQrOpen(false)}></div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 relative">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-900">QR Code</h3>
+              <button onClick={() => setIsQrOpen(false)} className="text-gray-400 hover:text-gray-900 bg-white hover:bg-gray-100 rounded-full p-1 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
             </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full">
-              <div className="bg-white px-6 pt-5 pb-6">
-                <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-                  <h3 className="text-xl leading-6 font-bold text-gray-900">QR Code</h3>
-                  <button onClick={() => setIsQrOpen(false)} className="text-gray-400 hover:text-gray-500 transition-colors">
-                    <span className="sr-only">Close</span>
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+            
+            <div className="p-6 text-center">
+              <p className="text-sm text-gray-500 mb-4">
+                {qrEquipment.name} ({qrEquipment.serial_number})
+              </p>
+              
+              {qrEquipment.qr_code ? (
+                <div className="flex justify-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <img src={qrEquipment.qr_code.startsWith('http') ? qrEquipment.qr_code : `http://localhost:8000${qrEquipment.qr_code}`} alt="QR Code" className="w-48 h-48 object-contain" />
                 </div>
-                
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-4">
-                    {qrEquipment.name} ({qrEquipment.serial_number})
-                  </p>
-                  
-                  {qrEquipment.qr_code ? (
-                    <div className="flex justify-center p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <img src={qrEquipment.qr_code.startsWith('http') ? qrEquipment.qr_code : `http://localhost:8000${qrEquipment.qr_code}`} alt="QR Code" className="w-48 h-48 object-contain" />
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-48 bg-gray-50 rounded-xl border border-gray-100 text-gray-400">
-                      <p>No QR Code generated</p>
-                    </div>
-                  )}
-                  
-                  <div className="mt-6 flex justify-center gap-3">
-                    <button onClick={() => window.open(`http://localhost:3000/q/${qrEquipment.public_id}`, '_blank')} className="px-4 py-2 bg-blue-50 text-blue-600 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors">
-                      Open Portal
-                    </button>
-                    {qrEquipment.qr_code && (
-                      <a href={qrEquipment.qr_code.startsWith('http') ? qrEquipment.qr_code : `http://localhost:8000${qrEquipment.qr_code}`} download={`${qrEquipment.serial_number}_qr.png`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-indigo-600 text-white font-medium text-sm rounded-lg hover:bg-indigo-700 transition-colors">
-                        Download
-                      </a>
-                    )}
-                  </div>
+              ) : (
+                <div className="flex items-center justify-center h-48 bg-gray-50 rounded-xl border border-gray-100 text-gray-400">
+                  <p>No QR Code generated</p>
                 </div>
+              )}
+              
+              <div className="mt-6 flex justify-center gap-3">
+                <button onClick={() => window.open(`http://localhost:5173/q/${qrEquipment.public_id}`, '_blank')} className="px-4 py-2 bg-blue-50 text-blue-600 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors">
+                  Open Portal
+                </button>
+                {qrEquipment.qr_code && (
+                  <a href={qrEquipment.qr_code.startsWith('http') ? qrEquipment.qr_code : `http://localhost:8000${qrEquipment.qr_code}`} download={`${qrEquipment.serial_number}_qr.png`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-indigo-600 text-white font-medium text-sm rounded-lg hover:bg-indigo-700 transition-colors">
+                    Download
+                  </a>
+                )}
               </div>
             </div>
           </div>

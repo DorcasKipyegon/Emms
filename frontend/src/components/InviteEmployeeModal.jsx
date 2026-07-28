@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import api from '../api';
 
-export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
+export default function InviteEmployeeModal({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
-    first_name: Worker.first_name || '',
-    last_name: Worker.last_name || '',
-    email: Worker.email || '',
-    phone_number: Worker.phone_number || ''
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone_number: ''
   });
   
   const [loading, setLoading] = useState(false);
@@ -18,10 +18,10 @@ export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
     setError(null);
 
     try {
-      await api.patch(`users/${Worker.id}/`, formData);
+      await api.post('users/invite_employee/', formData);
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update Worker details.');
+      setError(err.response?.data?.error || 'Failed to invite Employee. Please check the details and try again.');
     } finally {
       setLoading(false);
     }
@@ -41,9 +41,9 @@ export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
           <div className="flex items-center text-slate-700">
             <svg className="w-5 h-5 mr-2 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
-            <h3 className="font-bold text-lg">Edit Worker</h3>
+            <h3 className="font-bold text-lg">Invite Employee</h3>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -62,7 +62,11 @@ export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
             </div>
           )}
 
-          <form id="edit-Worker-form" onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm text-gray-500 mb-6">
+            An invitation email will be sent to this Employee with a secure link to set up their account password.
+          </p>
+
+          <form id="invite-Employee-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">First Name *</label>
@@ -73,6 +77,7 @@ export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
                   value={formData.first_name}
                   onChange={handleChange}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                  placeholder="John"
                 />
               </div>
               <div>
@@ -83,6 +88,7 @@ export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
                   value={formData.last_name}
                   onChange={handleChange}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                  placeholder="Doe"
                 />
               </div>
             </div>
@@ -96,6 +102,7 @@ export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                placeholder="john.doe@example.com"
               />
             </div>
 
@@ -107,7 +114,9 @@ export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
                 value={formData.phone_number}
                 onChange={handleChange}
                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                placeholder="+1234567890"
               />
+              <p className="text-xs text-gray-400 mt-1">If provided, they will also receive an SMS notification.</p>
             </div>
           </form>
         </div>
@@ -122,11 +131,21 @@ export default function EditWorkerModal({ Worker, onClose, onSuccess }) {
           </button>
           <button
             type="submit"
-            form="edit-Worker-form"
+            form="invite-Employee-form"
             disabled={loading}
             className="px-5 py-2 text-sm font-medium text-white bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm shadow-teal-500/30 transition-all disabled:opacity-70 flex items-center"
           >
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Sending Invite...
+              </>
+            ) : (
+              'Send Invite'
+            )}
           </button>
         </div>
 

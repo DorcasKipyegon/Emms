@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
+import api from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
-const QRPortal = () => {
+export default function QRPortal() {
   const { public_id } = useParams();
-  const { user, token } = useAuth();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [equipment, setEquipment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeSession, setActiveSession] = useState(null);
-  
-  const [issueTitle, setIssueTitle] = useState('');
-  const [issueDescription, setIssueDescription] = useState('');
-  const [submittingIssue, setSubmittingIssue] = useState(false);
-  const [issueSuccess, setIssueSuccess] = useState(false);
 
   useEffect(() => {
     fetchEquipment();
@@ -23,9 +18,7 @@ const QRPortal = () => {
 
   const fetchEquipment = async () => {
     try {
-      const res = await axios.get(`http://localhost:8000/api/equipment/public/${public_id}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get(`public/${public_id}/`);
       setEquipment(res.data);
       setLoading(false);
     } catch (err) {
@@ -34,163 +27,73 @@ const QRPortal = () => {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
   
-  useEffect(() => {
-    if (equipment) {
-      const getSession = async () => {
-        try {
-          const res = await axios.get(`http://localhost:8000/api/sessions/?user=${user.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const active = res.data.find(s => s.equipment === equipment.id && s.end_time === null);
-          if (active) setActiveSession(active);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      getSession();
-    }
-  }, [equipment, token, user.id]);
-
-  const handleCheckIn = async () => {
-    try {
-      const res = await axios.post(`http://localhost:8000/api/sessions/check_in/`, {
-        equipment_id: equipment.id
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setActiveSession(res.data);
-    } catch (err) {
-      alert("Failed to check in");
-    }
-  };
-
-  const handleCheckOut = async () => {
-    try {
-      await axios.post(`http://localhost:8000/api/sessions/check_out/`, {
-        equipment_id: equipment.id
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setActiveSession(null);
-    } catch (err) {
-      alert("Failed to check out");
-    }
-  };
-
-  const handleSubmitIssue = async (e) => {
-    e.preventDefault();
-    setSubmittingIssue(true);
-    try {
-      await axios.post(`http://localhost:8000/api/requests/`, {
-        public_id: public_id,
-        title: issueTitle,
-        description: issueDescription
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setIssueSuccess(true);
-      setIssueTitle('');
-      setIssueDescription('');
-    } catch (err) {
-      alert("Failed to submit issue");
-    } finally {
-      setSubmittingIssue(false);
-    }
-  };
-
-  if (loading) return <div className="h-screen w-screen bg-gray-950 flex items-center justify-center text-white"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>;
-  if (error) return <div className="h-screen w-screen bg-gray-950 flex items-center justify-center text-red-500">{error}</div>;
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-6 rounded-xl flex items-center shadow-sm">
+          <svg className="w-6 h-6 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <span className="font-medium text-lg">{error}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6 font-sans">
-      <div className="max-w-md mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-100 mb-2">{equipment.name}</h1>
-          <p className="text-gray-400">ID: {equipment.serial_number}</p>
-          <span className="inline-block mt-2 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm font-medium">
-            {equipment.category_name || 'Equipment'}
-          </span>
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-3xl mx-auto py-8">
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-100 text-teal-600 mb-4 shadow-sm border border-teal-200">
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+          </svg>
         </div>
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-2">{equipment.name}</h1>
+        <p className="text-gray-500 text-lg">Serial/ID: {equipment.serial_number}</p>
+        <span className="inline-block mt-3 px-4 py-1.5 bg-teal-50 border border-teal-200 text-teal-700 rounded-full text-sm font-semibold uppercase tracking-wider">
+          {equipment.category_name || 'Equipment'}
+        </span>
+      </div>
 
-        {/* Shift Tracking Box */}
-        <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-xl mb-6 text-center">
-          <h2 className="text-xl font-semibold mb-4">Shift Status</h2>
-          {activeSession ? (
-            <div>
-              <p className="text-green-400 font-medium mb-4 flex items-center justify-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                You are currently checked in
-              </p>
-              <button 
-                onClick={handleCheckOut}
-                className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors"
-              >
-                Check Out (End Shift)
-              </button>
-            </div>
-          ) : (
-            <div>
-              <p className="text-gray-400 mb-4">You are not checked in to this machine.</p>
-              <button 
-                onClick={handleCheckIn}
-                className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors shadow-lg shadow-blue-500/20"
-              >
-                Check In (Start Shift)
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Report Issue Box */}
-        <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-xl">
-          <h2 className="text-xl font-semibold mb-4">Report an Issue</h2>
-          
-          {issueSuccess ? (
-            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
-              <p className="text-green-400 font-medium">Issue reported successfully!</p>
-              <button onClick={() => setIssueSuccess(false)} className="mt-3 text-sm text-gray-400 hover:text-white underline">Report another</button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmitIssue} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Issue Summary</label>
-                <input 
-                  type="text"
-                  required
-                  value={issueTitle}
-                  onChange={e => setIssueTitle(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="e.g. Keyboard stopped working"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Details</label>
-                <textarea 
-                  required
-                  value={issueDescription}
-                  onChange={e => setIssueDescription(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors min-h-[100px]"
-                  placeholder="Please describe what happened..."
-                />
-              </div>
-              <button 
-                disabled={submittingIssue}
-                type="submit"
-                className="w-full py-3 bg-white text-black hover:bg-gray-200 disabled:opacity-50 rounded-xl font-medium transition-colors"
-              >
-                {submittingIssue ? 'Submitting...' : 'Submit Request'}
-              </button>
-            </form>
-          )}
-        </div>
+      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm text-center">
+        <h2 className="text-2xl font-semibold mb-2 text-gray-800">What would you like to do?</h2>
+        <p className="text-gray-500 mb-8">Select an action for this equipment.</p>
         
-        <div className="text-center mt-8">
-           <a href="/" className="text-gray-500 text-sm hover:text-white underline">Back to Dashboard</a>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <button 
+            onClick={() => navigate(`/employee-dashboard?qr=${public_id}`)}
+            className="group flex flex-col items-center p-8 bg-gray-50 rounded-2xl border-2 border-transparent hover:border-teal-500 hover:bg-teal-50 transition-all cursor-pointer text-center"
+          >
+            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-teal-600 group-hover:bg-teal-500 group-hover:text-white transition-colors mb-4">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Report an Issue</h3>
+            <p className="text-gray-500 text-sm">Submit a breakdown or maintenance request for this machine.</p>
+          </button>
+
+          <button 
+            onClick={() => navigate(`/my-shift?qr=${public_id}`)}
+            className="group flex flex-col items-center p-8 bg-gray-50 rounded-2xl border-2 border-transparent hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer text-center"
+          >
+            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors mb-4">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Manage Shift</h3>
+            <p className="text-gray-500 text-sm">Check in to start using this machine, or check out to end your shift.</p>
+          </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default QRPortal;
+}

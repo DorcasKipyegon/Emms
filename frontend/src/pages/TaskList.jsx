@@ -331,7 +331,7 @@ export default function TaskList() {
               
               <div 
                 className={`text-xs font-medium text-gray-600 bg-gray-50 p-3 rounded-lg mb-4 space-y-2 border ${task.source_request_info ? 'border-[#13e39d]/50 shadow-sm shadow-[#13e39d]/10 cursor-help' : 'border-gray-200'}`}
-                title={task.source_request_info ? `Origin: ${task.source_request_info.is_from_inspection ? 'Failed Inspection by' : 'Worker Report by'} ${task.source_request_info.reported_by_name}` : undefined}
+                title={task.source_request_info ? `Origin: ${task.source_request_info.is_from_inspection ? 'Failed Inspection by' : 'Employee Report by'} ${task.source_request_info.reported_by_name}` : undefined}
               >
                 <div className="flex items-center justify-between">
                   <p className="flex items-center">

@@ -1,36 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Login() {
-  const [username, setUsername] = useState('');
+export default function Register() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { register } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/';
-  const navigate = useNavigate();
 
-  // If already logged in, redirect immediately
-  useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true });
-    }
-  }, [user, navigate, from]);
-
-  const handleLogin = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
     try {
-      await login(username.trim(), password);
-      // Removed immediate navigate() because useEffect will handle it once context updates
+      await register(firstName, lastName, email, password);
+      navigate(from, { replace: true });
     } catch (err) {
-      console.error(err);
-      setError(err?.response?.data?.detail || err?.message || 'Invalid email, username, or password.');
-      setIsLoading(false);
+      setError(err.response?.data?.error || 'Registration failed. Please try again.');
     }
   };
 
@@ -52,13 +42,13 @@ export default function Login() {
           </div>
 
           <h2 className="text-center text-3xl font-extrabold text-slate-900">
-            Welcome Back
+            Create Account
           </h2>
           <p className="mt-2 text-center text-sm text-slate-500 mb-8 font-medium">
-            Sign in to continue to EMMS<span className="text-teal-500 font-bold">.PRO</span>
+            Join EMMS<span className="text-teal-500 font-bold">.PRO</span> to submit issues
           </p>
 
-          <form className="space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-5" onSubmit={handleRegister}>
             {error && (
               <div className="bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-xl text-sm font-medium flex items-center">
                 <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path></svg>
@@ -66,44 +56,72 @@ export default function Login() {
               </div>
             )}
             
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  First Name
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium sm:text-sm"
+                    placeholder="John"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Last Name
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium sm:text-sm"
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Email or Username
+                Email Address
               </label>
               <div className="mt-1">
                 <input
-                  type="text"
+                  type="email"
                   required
-                  className="block w-full px-4 py-3 bg-[#F0F4F8] border border-transparent rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:bg-white transition-all sm:text-sm"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Username or you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium sm:text-sm"
+                  placeholder="john@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Password
-                </label>
-                <Link to="/forgot-password" className="text-xs font-bold text-teal-600 hover:text-teal-500 transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Password
+              </label>
               <div className="mt-1 relative">
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  className="block w-full px-4 py-3 bg-[#F0F4F8] border border-transparent rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:bg-white transition-all sm:text-sm"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium sm:text-sm pr-10"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-teal-500 transition-colors"
                 >
                   {showPassword ? (
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,34 +137,24 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-teal-500 focus:ring-teal-500 border-gray-300 rounded transition-colors"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600 font-medium">
-                Remember me
-              </label>
-            </div>
-
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-teal-500/30 text-sm font-bold text-white bg-teal-400 hover:bg-teal-500 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all duration-200 disabled:opacity-70 disabled:hover:-translate-y-0 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-teal-500/30 text-sm font-bold text-white bg-teal-400 hover:bg-teal-500 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all duration-200 mt-2"
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                Sign Up 
+                <svg className="ml-2 -mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
               </button>
             </div>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-sm text-slate-500 font-medium">
-              Don't have an account?{' '}
-              <Link to="/register" state={{ from: location.state?.from }} className="text-teal-500 hover:text-teal-600 font-bold hover:underline transition-all">
-                Sign up
+              Already have an account?{' '}
+              <Link to="/login" state={{ from: location.state?.from }} className="text-teal-500 hover:text-teal-600 font-bold hover:underline transition-all">
+                Sign in
               </Link>
             </p>
           </div>

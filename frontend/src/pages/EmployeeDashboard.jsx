@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import SearchableSelect from '../components/SearchableSelect';
 import api from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function WorkerDashboard() {
+export default function EmployeeDashboard() {
   const { user } = useAuth();
   const [equipmentList, setEquipmentList] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
@@ -17,6 +19,8 @@ export default function WorkerDashboard() {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
+  const location = useLocation();
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -30,6 +34,16 @@ export default function WorkerDashboard() {
       ]);
       setEquipmentList(eqRes.data);
       setMyRequests(reqRes.data);
+      
+      // Auto-select equipment if qr param is present
+      const queryParams = new URLSearchParams(location.search);
+      const qrId = queryParams.get('qr');
+      if (qrId) {
+        const eq = eqRes.data.find(e => e.public_id === qrId);
+        if (eq) {
+          setEquipmentId(eq.id);
+        }
+      }
     } catch (err) {
       console.error(err);
       setError("Failed to load dashboard data.");
@@ -40,7 +54,11 @@ export default function WorkerDashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!equipmentId || !title || !description) return;
+    if (!equipmentId) {
+      setError("Please select an equipment.");
+      return;
+    }
+    if (!title || !description) return;
     
     setIsSubmitting(true);
     setError(null);
@@ -114,17 +132,12 @@ export default function WorkerDashboard() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Equipment *</label>
-                <select 
-                  required
+                <SearchableSelect 
                   value={equipmentId}
-                  onChange={(e) => setEquipmentId(e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                >
-                  <option value="">Select equipment...</option>
-                  {equipmentList.map(eq => (
-                    <option key={eq.id} value={eq.id}>{eq.name} ({eq.serial_number})</option>
-                  ))}
-                </select>
+                  onChange={setEquipmentId}
+                  options={equipmentList.map(eq => ({ value: eq.id, label: `${eq.name} (${eq.serial_number})` }))}
+                  placeholder="Select equipment..."
+                />
               </div>
 
               <div>
