@@ -4,18 +4,33 @@ A modern, full-stack web application designed to streamline facility maintenance
 
 ![EMMS.PRO Dashboard Concept](https://via.placeholder.com/1000x500.png?text=EMMS.PRO+Dashboard) *(Replace with actual screenshot)*
 
-## 🌟 Key Features
+## 🚀 Key Features Built So Far
 
-- **Role-Based Workflows**: Tailored experiences for **Managers** (full administrative control, analytics, reporting) and **Technicians** (assigned task execution, equipment status updates).
-- **Task Management Board**: Clean, filterable Kanban-style board to track tasks (`Pending`, `In Progress`, `Completed`, `Archived`). Includes one-click CSV exporting for reporting.
-- **Automated Technician Onboarding**: Managers can invite technicians via an intuitive UI. The system automatically provisions accounts and securely emails setup links without exposing passwords or relying on Django admin.
-- **Smart Inventory Tracking**: Track spare parts, monitor current stock against reorder levels, and automatically generate unique SKUs based on part names.
-- **Equipment Management**: Maintain detailed records of all facility equipment, their operational status, and maintenance history.
+### 1. Role-Based Unified Workflows
+- Tailored experiences for **Managers** (full administrative control, analytics, reporting, scheduling) and **Technicians** (assigned task execution, equipment status updates).
+- **Unified Equipment Details:** A single adaptive interface that provides read-only tracking for Technicians, but dynamically unlocks administrative actions (Edit, Schedule, Upload) for Managers.
 
-## 💻 Tech Stack
+### 2. Comprehensive Equipment Management
+- Maintain detailed records of all facility equipment, their operational status, specifications, and maintenance history.
+- **QR Code Integration:** Managers can generate and print QR codes for machines. Technicians can scan them for instant access to equipment details and logging.
+- **Document Vault:** Securely upload, view, and manage equipment manuals, schematics, and warranty documents directly from the equipment profile.
+
+### 3. Maintenance & Work Order Flow
+- **Task Management Board:** Clean, filterable Kanban-style board to track tasks (`Pending`, `In Progress`, `Completed`, `Archived`). Includes one-click CSV exporting for reporting.
+- **Maintenance Requests:** Workers can submit maintenance requests that managers can review, approve into work orders, or reject.
+- **Automated Preventive Maintenance (PM):** Managers can configure time-based (e.g., every 30 days) or usage-based (e.g., every 500 hours) PM schedules. The system automatically generates work orders using Celery.
+
+### 4. Smart Inventory & Parts Tracking
+- Track spare parts, monitor current stock against reorder levels, and automatically generate unique SKUs based on part names.
+- **Parts Usage Log:** Detailed historical tracking of every spare part used, identifying the work order, technician, quantity, and cost at the time of usage.
+
+### 5. Automated Technician Onboarding
+- Managers can invite technicians via an intuitive UI. The system automatically provisions accounts and securely emails setup links without exposing passwords or relying on Django admin.
+
+## 🛠️ Tech Stack
 
 **Frontend**
-- React 18
+- React 19
 - Vite
 - Tailwind CSS (with beautiful teal accents & glassmorphism)
 - React Router DOM
@@ -30,7 +45,7 @@ A modern, full-stack web application designed to streamline facility maintenance
 
 ---
 
-## 🚀 Getting Started
+## ⚙️ Getting Started
 
 Follow these instructions to get a copy of the project up and running on your local machine for development and testing.
 
@@ -82,9 +97,10 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-*(Optional) Start Celery worker in a new terminal for email handling:*
+*(Optional) Start Celery worker & beat in new terminals for background tasks:*
 ```bash
 celery -A emms_backend worker -l info --pool=solo
+celery -A emms_backend beat -l info
 ```
 
 ### 3. Frontend Setup
@@ -106,5 +122,5 @@ npm run dev
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/DorcasKipyegon/Emms/issues).
 
-## 📝 License
+## 📄 License
 This project is licensed under the MIT License.
