@@ -18,6 +18,7 @@ export default function EquipmentDetail() {
   const [tasks, setTasks] = useState([]);
   const [requests, setRequests] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -36,7 +37,8 @@ export default function EquipmentDetail() {
     try {
       const promises = [
         api.get(`equipment/${id}/`),
-        api.get(`repair-tasks/?equipment=${id}`)
+        api.get(`repair-tasks/?equipment=${id}`),
+        api.get(`sessions/?equipment=${id}`)
       ];
       if (isManager) {
         promises.push(api.get(`maintenance-requests/?equipment=${id}`));
@@ -46,9 +48,10 @@ export default function EquipmentDetail() {
       const results = await Promise.all(promises);
       setEquipment(results[0].data);
       setTasks(results[1].data);
+      setSessions(results[2].data);
       if (isManager) {
-        setRequests(results[2].data);
-        setCategories(results[3].data);
+        setRequests(results[3].data);
+        setCategories(results[4].data);
       }
     } catch (err) {
       console.error("Failed to fetch equipment details", err);
@@ -288,6 +291,7 @@ export default function EquipmentDetail() {
             {[
               { id: 'overview', label: 'Overview' },
               { id: 'history', label: `Maintenance history`, count: tasks.length },
+              ...(isManager ? [{ id: 'usage', label: 'Usage History', count: sessions.length }] : []),
               { id: 'parts', label: 'Parts' },
               { id: 'documents', label: 'Documents', count: equipment.documents?.length || 0 },
               ...(isManager ? [{ id: 'requests', label: 'Requests', count: requests.length }] : [])
@@ -316,6 +320,66 @@ export default function EquipmentDetail() {
 
         <div className="p-6 md:p-8 bg-slate-50/50 rounded-b-2xl min-h-[400px]">
           
+          {/* TAB: USAGE HISTORY */}
+          {activeTab === 'usage' && isManager && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Equipment Usage History</h3>
+                  <p className="text-sm text-slate-500">Track all operator shifts and utilization.</p>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-700">
+                    <thead className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4">Operator</th>
+                        <th className="px-6 py-4">Start Time</th>
+                        <th className="px-6 py-4">End Time</th>
+                        <th className="px-6 py-4 text-right">Duration (Hrs)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {sessions.length === 0 ? (
+                        <tr>
+                          <td colSpan="4" className="px-6 py-12 text-center text-slate-500">
+                            No usage history recorded for this equipment.
+                          </td>
+                        </tr>
+                      ) : sessions.map(session => {
+                        const start = new Date(session.start_time);
+                        const end = session.end_time ? new Date(session.end_time) : null;
+                        const duration = end ? ((end - start) / (1000 * 60 * 60)).toFixed(2) : 'Active';
+                        
+                        return (
+                          <tr key={session.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="px-6 py-4">
+                              <span className="font-bold text-slate-900">{session.user_name}</span>
+                            </td>
+                            <td className="px-6 py-4">{start.toLocaleString()}</td>
+                            <td className="px-6 py-4">
+                              {end ? end.toLocaleString() : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  In Use
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right font-medium">
+                              {duration}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

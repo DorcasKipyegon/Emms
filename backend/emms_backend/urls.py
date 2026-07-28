@@ -22,6 +22,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from .search_views import global_search
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -36,6 +37,7 @@ urlpatterns = [
     path('api/', include('inventory.urls')),
     path('api/', include('maintenance.urls')),
     path('api/reports/', include('reports.urls')),
+    path('api/search/', global_search, name='global_search'),
 ]
 
 if settings.DEBUG:

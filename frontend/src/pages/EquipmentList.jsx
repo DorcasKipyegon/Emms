@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import api from '../api';
+import QRModal from '../components/equipment/QRModal';
 
 export default function EquipmentList() {
   const navigate = useNavigate();
@@ -742,45 +743,11 @@ export default function EquipmentList() {
       )}
 
       {/* QR Code Modal */}
-      {isQrOpen && qrEquipment && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-gray-200 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 relative">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-              <h3 className="text-lg font-bold text-gray-900">QR Code</h3>
-              <button onClick={() => setIsQrOpen(false)} className="text-gray-400 hover:text-gray-900 bg-white hover:bg-gray-100 rounded-full p-1 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
-            </div>
-            
-            <div className="p-6 text-center">
-              <p className="text-sm text-gray-500 mb-4">
-                {qrEquipment.name} ({qrEquipment.serial_number})
-              </p>
-              
-              {qrEquipment.qr_code ? (
-                <div className="flex justify-center p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <img src={qrEquipment.qr_code.startsWith('http') ? qrEquipment.qr_code : `http://localhost:8000${qrEquipment.qr_code}`} alt="QR Code" className="w-48 h-48 object-contain" />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-48 bg-gray-50 rounded-xl border border-gray-100 text-gray-400">
-                  <p>No QR Code generated</p>
-                </div>
-              )}
-              
-              <div className="mt-6 flex justify-center gap-3">
-                <button onClick={() => window.open(`http://localhost:5173/q/${qrEquipment.public_id}`, '_blank')} className="px-4 py-2 bg-blue-50 text-blue-600 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors">
-                  Open Portal
-                </button>
-                {qrEquipment.qr_code && (
-                  <a href={qrEquipment.qr_code.startsWith('http') ? qrEquipment.qr_code : `http://localhost:8000${qrEquipment.qr_code}`} download={`${qrEquipment.serial_number}_qr.png`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-indigo-600 text-white font-medium text-sm rounded-lg hover:bg-indigo-700 transition-colors">
-                    Download
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <QRModal 
+        isOpen={isQrOpen} 
+        onClose={() => setIsQrOpen(false)} 
+        equipment={qrEquipment} 
+      />
     </div>
   );
 }

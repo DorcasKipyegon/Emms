@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api';
 
-export default function Sidebar() {
+export default function Sidebar({ isCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -91,9 +91,11 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="w-64 bg-[#0a1c2e] flex flex-col h-full hidden md:flex">
-      <div className="h-20 flex flex-col justify-center px-6 pt-4 pb-2">
-        <h1 className="text-xl font-bold text-[#13e39d] tracking-wider">EMMS<span className="text-white">.PRO</span></h1>
+    <div className={`bg-[#0a1c2e] flex flex-col h-full hidden md:flex transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <div className={`h-20 flex flex-col justify-center pt-4 pb-2 ${isCollapsed ? 'px-0 items-center' : 'px-6'}`}>
+        <h1 className="text-xl font-bold text-[#13e39d] tracking-wider truncate">
+          {isCollapsed ? 'E' : <>EMMS<span className="text-white">.PRO</span></>}
+        </h1>
       </div>
       
       <nav className="flex-1 px-4 py-4 space-y-1">
@@ -103,32 +105,39 @@ export default function Sidebar() {
             <Link
               key={item.name}
               to={item.href}
-              className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 ${
+              title={isCollapsed ? item.name : undefined}
+              className={`flex items-center py-3 rounded-xl transition-all duration-200 relative ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
                 isActive
                   ? 'bg-[#13e39d] text-[#0a1c2e]'
                   : 'text-white hover:bg-white/10'
               }`}
             >
-              <div className="mr-4">
+              <div className={`${isCollapsed ? '' : 'mr-4'}`}>
                 {item.icon}
               </div>
-              <span className="font-bold text-[15px] flex-grow">{item.name}</span>
-              {item.badge > 0 && (
+              {!isCollapsed && <span className="font-bold text-[15px] flex-grow">{item.name}</span>}
+              {!isCollapsed && item.badge > 0 && (
                 <span className="ml-auto bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {item.badge}
                 </span>
+              )}
+              {isCollapsed && item.badge > 0 && (
+                <span className="absolute top-2 right-2 bg-rose-500 w-2.5 h-2.5 rounded-full border-2 border-[#0a1c2e]"></span>
               )}
             </Link>
           );
         })}
       </nav>
       
-      <div className="p-4 mt-auto">
+      <div className={`p-4 mt-auto ${isCollapsed ? 'px-2' : ''}`}>
         <button 
           onClick={handleLogout}
-          className="w-full py-2 px-4 bg-white/5 hover:bg-rose-500 hover:text-white text-sm font-medium rounded-full transition-colors text-slate-300 text-center"
+          title={isCollapsed ? 'Logout' : undefined}
+          className={`w-full py-2 bg-white/5 hover:bg-rose-500 hover:text-white text-sm font-medium rounded-full transition-colors text-slate-300 flex items-center justify-center ${isCollapsed ? 'px-0' : 'px-4'}`}
         >
-          Logout
+          {isCollapsed ? (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          ) : 'Logout'}
         </button>
       </div>
     </div>

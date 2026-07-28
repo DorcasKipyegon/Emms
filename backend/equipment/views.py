@@ -125,10 +125,15 @@ class AssetSessionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = AssetSession.objects.all()
+        queryset = AssetSession.objects.all().order_by('-start_time')
         user_id = self.request.query_params.get('user', None)
+        equipment_id = self.request.query_params.get('equipment', None)
+        
         if user_id is not None:
             queryset = queryset.filter(user_id=user_id)
+        if equipment_id is not None:
+            queryset = queryset.filter(equipment_id=equipment_id)
+            
         return queryset
 
     @action(detail=False, methods=['post'])

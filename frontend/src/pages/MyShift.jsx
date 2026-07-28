@@ -13,6 +13,7 @@ export default function MyShift() {
   const [equipmentId, setEquipmentId] = useState('');
   const [activeSession, setActiveSession] = useState(null);
   const [sessionLoading, setSessionLoading] = useState(false);
+  const [mySessions, setMySessions] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function MyShift() {
   const fetchUserSessions = async (eqList, defaultEqId) => {
     try {
       const res = await api.get(`sessions/?user=${user.id}`);
+      setMySessions(res.data);
       // Find ANY active session
       const active = res.data.find(s => s.end_time === null);
       if (active) {
@@ -78,6 +80,9 @@ export default function MyShift() {
       });
       setActiveSession(res.data);
       await fetchEquipment(); // Refresh equipment list to update active_session_user
+      // Re-fetch sessions to update history table
+      const sessionRes = await api.get(`sessions/?user=${user.id}`);
+      setMySessions(sessionRes.data);
     } catch (err) {
       setError("Failed to check in.");
       console.error(err);
@@ -96,6 +101,9 @@ export default function MyShift() {
       });
       setActiveSession(null);
       await fetchEquipment(); // Refresh equipment list to update active_session_user
+      // Re-fetch sessions to update history table
+      const sessionRes = await api.get(`sessions/?user=${user.id}`);
+      setMySessions(sessionRes.data);
     } catch (err) {
       setError("Failed to check out.");
       console.error(err);
@@ -199,6 +207,60 @@ export default function MyShift() {
           </div>
         )}
       </div>
+
+      {/* My Shift History Section */}
+      <div className="mt-8">
+        <h3 className="text-xl font-bold text-gray-900 mb-4">My Shift History</h3>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-700">
+              <thead className="bg-teal-50 text-xs font-bold text-teal-700 uppercase tracking-wider border-b border-teal-100">
+                <tr>
+                  <th className="px-6 py-4">Equipment</th>
+                  <th className="px-6 py-4">Start Time</th>
+                  <th className="px-6 py-4">End Time</th>
+                  <th className="px-6 py-4 text-right">Duration (Hrs)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {mySessions.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                      You have no recorded shift history yet.
+                    </td>
+                  </tr>
+                ) : mySessions.map(session => {
+                  const start = new Date(session.start_time);
+                  const end = session.end_time ? new Date(session.end_time) : null;
+                  const duration = end ? ((end - start) / (1000 * 60 * 60)).toFixed(2) : 'Active';
+                  const eqName = equipmentList.find(e => e.id === session.equipment)?.name || session.equipment_name || `Equipment ID: ${session.equipment}`;
+                  
+                  return (
+                    <tr key={session.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="font-bold text-gray-900">{eqName}</span>
+                      </td>
+                      <td className="px-6 py-4">{start.toLocaleString()}</td>
+                      <td className="px-6 py-4">
+                        {end ? end.toLocaleString() : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            In Use
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium">
+                        {duration}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function QRModal({ isOpen, onClose, equipment }) {
+  const [copied, setCopied] = useState(false);
+
   if (!isOpen || !equipment) return null;
+
+  const handleCopy = () => {
+    const url = `${window.location.origin}/q/${equipment.public_id}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -29,8 +38,18 @@ export default function QRModal({ isOpen, onClose, equipment }) {
           )}
           
           <div className="mt-6 flex justify-center gap-3">
-            <button onClick={() => window.open(`http://localhost:5173/q/${equipment.public_id}`, '_blank')} className="px-4 py-2 bg-teal-50 text-teal-600 font-bold text-sm rounded-lg hover:bg-teal-100 transition-colors">
-              Open Portal
+            <button onClick={handleCopy} className="px-4 py-2 bg-teal-50 text-teal-600 font-bold text-sm rounded-lg hover:bg-teal-100 transition-colors flex items-center gap-2">
+              {copied ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                  Copy Link
+                </>
+              )}
             </button>
             {equipment.qr_code && (
               <a href={equipment.qr_code.startsWith('http') ? equipment.qr_code : `http://localhost:8000${equipment.qr_code}`} download={`${equipment.serial_number}_qr.png`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-slate-800 text-white font-bold text-sm rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
