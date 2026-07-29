@@ -27,6 +27,16 @@ export default function TechnicianList() {
     }
   };
 
+  const handleResendInvite = async (techId) => {
+    try {
+      await api.post(`users/${techId}/resend_invite/`);
+      alert('Invite resent successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to resend invite. Please try again.');
+    }
+  };
+
   useEffect(() => {
     if (user?.role === 'MANAGER' || user?.role === 'ADMIN') {
       fetchTechnicians();
@@ -139,6 +149,14 @@ export default function TechnicianList() {
                       {new Date(tech.date_joined).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {!tech.is_active && (
+                        <button 
+                          onClick={() => handleResendInvite(tech.id)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-4 font-semibold"
+                        >
+                          Resend Invite
+                        </button>
+                      )}
                       <button 
                         onClick={() => setEditingTech(tech)}
                         className="text-teal-600 hover:text-teal-900 mr-4 font-semibold"

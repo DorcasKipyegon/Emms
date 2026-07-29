@@ -120,27 +120,108 @@ class UserViewSet(viewsets.ModelViewSet):
         </div>
         """
         
-        # TEMPORARY FIX: Disable email and SMS sending to isolate the crash
-        # send_mail(
-        #     subject,
-        #     message,
-        #     settings.DEFAULT_FROM_EMAIL,
-        #     [user.email],
-        #     fail_silently=True,
-        #     html_message=html_message
-        # )
+        import threading
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        def send_notifications():
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=True,
+                    html_message=html_message
+                )
+            except Exception as e:
+                print(f"Email failed: {e}")
+                
+            if phone_number:
+                try:
+                    from emms_backend.notifications import send_system_sms
+                    sms_message = f"Welcome to EMMS! Please check your email ({email}) to set up your Technician account."
+                    send_system_sms(phone_number, sms_message)
+                except Exception as e:
+                    print(f"SMS failed: {e}")
+                    
+        threading.Thread(target=send_notifications).start()
         
         print(f"Technician Setup Link for {email}: {setup_link}")
         
-        # if phone_number:
-        #     from emms_backend.notifications import send_system_sms
-        #     sms_message = f"Welcome to EMMS! Please check your email ({email}) to set up your Technician account."
-        #     try:
-        #         send_system_sms(phone_number, sms_message)
-        #     except Exception as e:
-        #         print(f"Setup Link for {email}: {setup_link}")
-        
         return Response({'message': 'Technician invited successfully.', 'setup_link': setup_link})
+
+    @action(detail=True, methods=['post'], url_path='resend_invite')
+    def resend_invite(self, request, pk=None):
+        if request.user.role not in ['MANAGER', 'ADMIN']:
+            return Response({'error': 'Only managers can resend invites.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+            
+        if user.is_active:
+            return Response({'error': 'User is already active.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Generate token
+        token_generator = PasswordResetTokenGenerator()
+        token = token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        frontend_url = request.META.get('HTTP_ORIGIN', 'http://localhost:5173')
+        setup_link = f"{frontend_url}/setup-account?uidb64={uid}&token={token}"
+        
+        subject = 'Welcome to EMMS.PRO - Set Up Your Account'
+        message = f'Hello {user.first_name},\n\nYou have been invited to join EMMS.PRO as a Technician.\nPlease click the link below to set up your password and activate your account:\n\n{setup_link}'
+        html_message = f"""
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; text-align: center;">
+            <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; padding: 40px 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="margin-bottom: 24px;">
+                    <span style="background-color: #0f172a; color: #2dd4bf; font-weight: 800; font-size: 20px; padding: 12px 16px; border-radius: 50%; display: inline-block; letter-spacing: 1px;">EMMS</span>
+                </div>
+                <h2 style="color: #0f172a; font-size: 24px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">Welcome to EMMS.PRO!</h2>
+                <p style="color: #475569; font-size: 16px; line-height: 1.5; margin-bottom: 32px; font-weight: 500;">
+                    Hello {user.first_name},<br><br>
+                    You have been invited to join EMMS as a Technician. To get started, please set up your account password by clicking the button below.
+                </p>
+                <a href="{setup_link}" style="display: inline-block; background-color: #2dd4bf; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 700; padding: 16px 32px; border-radius: 12px; width: 80%; max-width: 300px; box-sizing: border-box;">
+                    Set Up Account
+                </a>
+            </div>
+        </div>
+        """
+        
+        import threading
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        def send_notifications():
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=True,
+                    html_message=html_message
+                )
+            except Exception as e:
+                print(f"Email failed: {e}")
+                
+            if user.phone_number:
+                try:
+                    from emms_backend.notifications import send_system_sms
+                    sms_message = f"Welcome to EMMS! Please check your email ({user.email}) to set up your Technician account."
+                    send_system_sms(user.phone_number, sms_message)
+                except Exception as e:
+                    print(f"SMS failed: {e}")
+                    
+        threading.Thread(target=send_notifications).start()
+        
+        print(f"Resent Technician Setup Link for {user.email}: {setup_link}")
+        
+        return Response({'message': 'Invite resent successfully.'})
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):
