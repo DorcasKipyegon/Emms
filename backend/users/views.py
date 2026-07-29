@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='change_password')
     def change_password(self, request):
         user = request.user
         current_password = request.data.get('current_password')
@@ -51,7 +51,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save()
         return Response({'message': 'Password updated successfully.'})
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='invite_technician')
     def invite_technician(self, request):
         if request.user.role not in ['MANAGER', 'ADMIN']:
             return Response({'error': 'Only managers can invite technicians.'}, status=status.HTTP_403_FORBIDDEN)
