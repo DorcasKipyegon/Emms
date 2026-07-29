@@ -120,24 +120,25 @@ class UserViewSet(viewsets.ModelViewSet):
         </div>
         """
         
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=True,
-            html_message=html_message
-        )
+        # TEMPORARY FIX: Disable email and SMS sending to isolate the crash
+        # send_mail(
+        #     subject,
+        #     message,
+        #     settings.DEFAULT_FROM_EMAIL,
+        #     [user.email],
+        #     fail_silently=True,
+        #     html_message=html_message
+        # )
         
         print(f"Technician Setup Link for {email}: {setup_link}")
         
-        if phone_number:
-            from emms_backend.notifications import send_system_sms
-            sms_message = f"Welcome to EMMS! Please check your email ({email}) to set up your Technician account."
-            try:
-                send_system_sms(phone_number, sms_message)
-            except Exception as e:
-                print(f"Setup Link for {email}: {setup_link}")
+        # if phone_number:
+        #     from emms_backend.notifications import send_system_sms
+        #     sms_message = f"Welcome to EMMS! Please check your email ({email}) to set up your Technician account."
+        #     try:
+        #         send_system_sms(phone_number, sms_message)
+        #     except Exception as e:
+        #         print(f"Setup Link for {email}: {setup_link}")
         
         return Response({'message': 'Technician invited successfully.', 'setup_link': setup_link})
 
