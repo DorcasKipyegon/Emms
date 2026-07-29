@@ -125,9 +125,11 @@ class UserViewSet(viewsets.ModelViewSet):
             message,
             settings.DEFAULT_FROM_EMAIL,
             [user.email],
-            fail_silently=False,
+            fail_silently=True,
             html_message=html_message
         )
+        
+        print(f"Technician Setup Link for {email}: {setup_link}")
         
         if phone_number:
             from emms_backend.notifications import send_system_sms
