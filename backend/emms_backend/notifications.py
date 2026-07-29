@@ -6,18 +6,6 @@ from decouple import config
 import os
 from decouple import Config, RepositoryEnv
 import requests
-import warnings
-from urllib3.exceptions import InsecureRequestWarning
-
-# Suppress insecure request warnings when bypassing SSL
-warnings.simplefilter('ignore', InsecureRequestWarning)
-
-# TEMPORARY BYPASS: Monkey-patch requests.post to ignore SSL errors for local development
-old_post = requests.post
-def insecure_post(*args, **kwargs):
-    kwargs['verify'] = False
-    return old_post(*args, **kwargs)
-requests.post = insecure_post
 
 env_path = os.path.join(settings.BASE_DIR, '.env')
 env_config = Config(RepositoryEnv(env_path)) if os.path.exists(env_path) else config
