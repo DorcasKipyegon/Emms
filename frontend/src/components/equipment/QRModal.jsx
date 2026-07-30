@@ -5,11 +5,10 @@ export default function QRModal({ isOpen, onClose, equipment }) {
 
   if (!isOpen || !equipment) return null;
 
-  const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api/').replace(/\/api\/?$/, '');
-  const qrUrl = equipment.qr_code ? (equipment.qr_code.startsWith('http') ? equipment.qr_code : `${baseUrl}${equipment.qr_code}`) : null;
+  const url = `${window.location.origin}/q/${equipment.public_id}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
 
   const handleCopy = () => {
-    const url = `${window.location.origin}/q/${equipment.public_id}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -30,7 +29,7 @@ export default function QRModal({ isOpen, onClose, equipment }) {
             {equipment.name} ({equipment.serial_number})
           </p>
           
-          {equipment.qr_code ? (
+          {equipment.public_id ? (
             <div className="flex justify-center p-4 bg-slate-50 rounded-xl border border-slate-100">
               <img src={qrUrl} alt="QR Code" className="w-48 h-48 object-contain" />
             </div>
@@ -54,7 +53,7 @@ export default function QRModal({ isOpen, onClose, equipment }) {
                 </>
               )}
             </button>
-            {equipment.qr_code && (
+            {equipment.public_id && (
               <a href={qrUrl} download={`${equipment.serial_number}_qr.png`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-slate-800 text-white font-bold text-sm rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
                 Download
               </a>
