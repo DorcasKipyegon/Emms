@@ -232,7 +232,10 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         request_obj = serializer.save(reported_by=self.request.user)
-        self._notify_managers(request_obj)
+        
+        # Send notifications in background
+        import threading
+        threading.Thread(target=self._notify_managers, args=(request_obj,)).start()
         
         # Start AI Triage in background
         import threading
@@ -248,10 +251,25 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
         message = f"Alert! A new maintenance request has been submitted by {request_obj.reported_by.get_full_name() if request_obj.reported_by else 'a technician'} for {request_obj.equipment.name}.\n\nDetails: {request_obj.description}"
         
         for manager in managers:
-            if manager.email:
-                send_system_email(manager.email, subject, message)
-            if manager.phone_number:
-                send_system_sms(manager.phone_number, message)
+            try:
+                if manager.email:
+                    send_system_email(manager.email, subject, message)
+                if manager.phone_number:
+                    send_system_sms(manager.phone_number, message)
+            except Exception as e:
+                print(f"Error notifying manager {manager.username}: {e}")
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.role == 'EMPLOYEE' and instance.status != 'PENDING':
+            return Response({'error': 'Cannot edit a request that has already been processed.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+        
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.role == 'EMPLOYEE' and instance.status != 'PENDING':
+            return Response({'error': 'Cannot delete a request that has already been processed.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 from rest_framework.views import APIView
 from emms_backend.ai_chat_service import process_chat_message
 

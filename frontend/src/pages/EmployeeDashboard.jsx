@@ -12,6 +12,7 @@ export default function EmployeeDashboard() {
   
   // Form State
   const [equipmentId, setEquipmentId] = useState('');
+  const [editId, setEditId] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState(null);
@@ -73,23 +74,62 @@ export default function EmployeeDashboard() {
         formData.append('photo', photo);
       }
 
-      await api.post('maintenance-requests/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      if (editId) {
+        await api.put(`maintenance-requests/${editId}/`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setSuccessMsg("Breakdown report updated successfully!");
+      } else {
+        await api.post('maintenance-requests/', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setSuccessMsg("Breakdown reported successfully!");
+      }
 
-      setSuccessMsg("Breakdown reported successfully!");
       setEquipmentId('');
       setTitle('');
       setDescription('');
       setPhoto(null);
+      setEditId(null);
       // Reset file input visually
-      document.getElementById('photo-upload').value = '';
+      const photoInput = document.getElementById('photo-upload');
+      if (photoInput) photoInput.value = '';
       fetchData();
     } catch (err) {
       console.error(err);
-      setError("Failed to submit report. Please try again.");
+      setError(`Failed to ${editId ? 'update' : 'submit'} report. Please try again.`);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (req) => {
+    setEditId(req.id);
+    setEquipmentId(req.equipment);
+    setTitle(req.title);
+    setDescription(req.description);
+    setPhoto(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditId(null);
+    setEquipmentId('');
+    setTitle('');
+    setDescription('');
+    setPhoto(null);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this report?")) return;
+    try {
+      await api.delete(`maintenance-requests/${id}/`);
+      setSuccessMsg("Report deleted successfully!");
+      if (editId === id) handleCancelEdit();
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete report.");
     }
   };
 
@@ -105,9 +145,14 @@ export default function EmployeeDashboard() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-gray-200 pb-5">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900">Report a Breakdown</h2>
-          <p className="text-gray-500 mt-1">Submit an issue with equipment to the maintenance team.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900">{editId ? 'Edit Breakdown Report' : 'Report a Breakdown'}</h2>
+          <p className="text-gray-500 mt-1">{editId ? 'Update your pending issue.' : 'Submit an issue with equipment to the maintenance team.'}</p>
         </div>
+        {editId && (
+          <button onClick={handleCancelEdit} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm">
+            Cancel Edit
+          </button>
+        )}
       </div>
 
       {error && (
@@ -180,7 +225,7 @@ export default function EmployeeDashboard() {
                 disabled={isSubmitting}
                 className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl shadow transition-colors disabled:opacity-50 mt-2"
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                {isSubmitting ? (editId ? 'Updating...' : 'Submitting...') : (editId ? 'Update Report' : 'Submit Report')}
               </button>
             </form>
           </div>
@@ -230,8 +275,15 @@ export default function EmployeeDashboard() {
                           </div>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500 whitespace-nowrap">
-                        {new Date(req.created_at).toLocaleDateString()}
+                      <div className="flex flex-col items-end gap-2 text-sm text-gray-500 whitespace-nowrap mt-2 sm:mt-0">
+                        <span>{new Date(req.created_at).toLocaleDateString()}</span>
+                        {req.status === 'PENDING' && (
+                          <div className="flex gap-2">
+                            <button onClick={() => handleEditClick(req)} className="text-teal-600 hover:text-teal-700 font-medium">Edit</button>
+                            <span className="text-gray-300">|</span>
+                            <button onClick={() => handleDelete(req.id)} className="text-rose-600 hover:text-rose-700 font-medium">Delete</button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </li>
