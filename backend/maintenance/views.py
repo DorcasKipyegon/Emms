@@ -58,7 +58,9 @@ class RepairTaskViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         task = serializer.save()
         if task.technician:
-            self._notify_technician(task)
+            from django.db import transaction
+            import threading
+            transaction.on_commit(lambda: threading.Thread(target=self._notify_technician, args=(task,)).start())
             
     def perform_update(self, serializer):
         old_task = self.get_object()
@@ -66,7 +68,9 @@ class RepairTaskViewSet(viewsets.ModelViewSet):
         task = serializer.save()
         
         if task.technician and task.technician != old_technician:
-            self._notify_technician(task)
+            from django.db import transaction
+            import threading
+            transaction.on_commit(lambda: threading.Thread(target=self._notify_technician, args=(task,)).start())
 
     def _notify_technician(self, task):
         from emms_backend.notifications import send_system_sms, send_system_email
