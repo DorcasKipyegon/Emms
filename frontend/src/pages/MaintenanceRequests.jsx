@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import AddTaskModal from '../components/AddTaskModal';
+import AlertModal from '../components/AlertModal';
 
 export default function MaintenanceRequests() {
   const [requests, setRequests] = useState([]);
@@ -13,6 +14,7 @@ export default function MaintenanceRequests() {
   const [rejectingRequest, setRejectingRequest] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [error, setError] = useState(null);
+  const [alertData, setAlertData] = useState(null);
   
   const parseAISteps = (stepsStr) => {
     if (!stepsStr) return [];
@@ -67,7 +69,7 @@ export default function MaintenanceRequests() {
       fetchRequests();
     } catch (err) {
       console.error(err);
-      alert('Failed to reject request');
+      setAlertData({ type: 'error', title: 'Rejection Failed', message: 'Failed to reject request' });
     }
   };
 
@@ -264,6 +266,14 @@ export default function MaintenanceRequests() {
           </div>
         </div>
       )}
+
+      <AlertModal
+        isOpen={!!alertData}
+        onClose={() => setAlertData(null)}
+        title={alertData?.title}
+        message={alertData?.message}
+        type={alertData?.type}
+      />
     </div>
   );
 }

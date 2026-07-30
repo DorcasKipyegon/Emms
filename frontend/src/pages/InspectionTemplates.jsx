@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import ConfirmModal from '../components/ConfirmModal';
+import AlertModal from '../components/AlertModal';
 
 export default function InspectionTemplates() {
   const [templates, setTemplates] = useState([]);
@@ -11,6 +13,10 @@ export default function InspectionTemplates() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [items, setItems] = useState([{ uid: Date.now(), text: '', is_required: true, order: 0 }]);
+
+  // Custom Modals
+  const [templateToDelete, setTemplateToDelete] = useState(null);
+  const [alertData, setAlertData] = useState(null);
 
   const fetchTemplates = async () => {
     try {
@@ -87,21 +93,23 @@ export default function InspectionTemplates() {
       fetchTemplates();
     } catch (err) {
       console.error(err);
-      alert('Failed to save template');
+      setAlertData({ type: 'error', title: 'Save Failed', message: 'Failed to save template.' });
     }
   };
 
-  const handleDelete = async (id) => {
-    if(!window.confirm("Are you sure you want to delete this template?")) return;
+  const confirmDelete = async () => {
+    if (!templateToDelete) return;
     try {
       const token = localStorage.getItem('access_token');
-      await axios.delete(`http://127.0.0.1:8000/api/inspection-templates/${id}/`, {
+      await axios.delete(`http://127.0.0.1:8000/api/inspection-templates/${templateToDelete}/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchTemplates();
     } catch (err) {
       console.error(err);
-      alert('Failed to delete template');
+      setAlertData({ type: 'error', title: 'Delete Failed', message: 'Failed to delete template.' });
+    } finally {
+      setTemplateToDelete(null);
     }
   };
 
@@ -130,7 +138,7 @@ export default function InspectionTemplates() {
             <div key={template.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-bold text-lg text-gray-900">{template.name}</h3>
-                <button onClick={() => handleDelete(template.id)} className="text-red-400 hover:text-red-600">
+                <button onClick={() => setTemplateToDelete(template.id)} className="text-red-400 hover:text-red-600">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
@@ -253,6 +261,24 @@ export default function InspectionTemplates() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!templateToDelete}
+        onClose={() => setTemplateToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Template"
+        message="Are you sure you want to delete this template? This action cannot be undone."
+        confirmText="Delete"
+        isDanger={true}
+      />
+
+      <AlertModal
+        isOpen={!!alertData}
+        onClose={() => setAlertData(null)}
+        title={alertData?.title}
+        message={alertData?.message}
+        type={alertData?.type}
+      />
     </div>
   );
 }

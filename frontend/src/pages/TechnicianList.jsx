@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import InviteTechnicianModal from '../components/InviteTechnicianModal';
 import EditTechnicianModal from '../components/EditTechnicianModal';
 import DeleteTechnicianModal from '../components/DeleteTechnicianModal';
+import AlertModal from '../components/AlertModal';
 
 export default function TechnicianList() {
   const [technicians, setTechnicians] = useState([]);
@@ -12,6 +13,7 @@ export default function TechnicianList() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [editingTech, setEditingTech] = useState(null);
   const [deletingTech, setDeletingTech] = useState(null);
+  const [alertData, setAlertData] = useState(null);
   const { user } = useAuth();
 
   const fetchTechnicians = async () => {
@@ -30,10 +32,10 @@ export default function TechnicianList() {
   const handleResendInvite = async (techId) => {
     try {
       await api.post(`users/${techId}/resend_invite/`);
-      alert('Invite resent successfully!');
+      setAlertData({ type: 'success', title: 'Invite Resent', message: 'Invite resent successfully!' });
     } catch (err) {
       console.error(err);
-      alert('Failed to resend invite. Please try again.');
+      setAlertData({ type: 'error', title: 'Failed', message: 'Failed to resend invite. Please try again.' });
     }
   };
 
@@ -212,6 +214,14 @@ export default function TechnicianList() {
           }}
         />
       )}
+
+      <AlertModal
+        isOpen={!!alertData}
+        onClose={() => setAlertData(null)}
+        title={alertData?.title}
+        message={alertData?.message}
+        type={alertData?.type}
+      />
     </div>
   );
 }

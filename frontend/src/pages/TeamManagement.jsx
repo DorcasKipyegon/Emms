@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
+import ConfirmModal from '../components/ConfirmModal';
+import AlertModal from '../components/AlertModal';
 
 export default function TeamManagement() {
   const [teams, setTeams] = useState([]);
@@ -12,6 +14,10 @@ export default function TeamManagement() {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
+
+  // Custom Modals
+  const [teamToDelete, setTeamToDelete] = useState(null);
+  const [alertData, setAlertData] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -58,7 +64,7 @@ export default function TeamManagement() {
       fetchData();
     } catch (err) {
       console.error('Failed to save team', err);
-      alert('Failed to save team. Name must be unique.');
+      setAlertData({ type: 'error', title: 'Save Failed', message: 'Failed to save team. Name must be unique.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -70,14 +76,16 @@ export default function TeamManagement() {
     setSelectedMembers(team.members || []);
   };
 
-  const handleDelete = async (teamId) => {
-    if (!window.confirm("Are you sure you want to delete this team?")) return;
+  const confirmDelete = async () => {
+    if (!teamToDelete) return;
     try {
-      await api.delete(`teams/${teamId}/`);
+      await api.delete(`teams/${teamToDelete}/`);
       fetchData();
     } catch (err) {
       console.error('Failed to delete team', err);
-      alert('Failed to delete team.');
+      setAlertData({ type: 'error', title: 'Delete Failed', message: 'Failed to delete team.' });
+    } finally {
+      setTeamToDelete(null);
     }
   };
 
@@ -214,7 +222,7 @@ export default function TeamManagement() {
                           Edit
                         </button>
                         <button 
-                          onClick={() => handleDelete(team.id)}
+                          onClick={() => setTeamToDelete(team.id)}
                           className="px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors w-full text-center border border-rose-100"
                         >
                           Delete
@@ -229,6 +237,24 @@ export default function TeamManagement() {
 
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!teamToDelete}
+        onClose={() => setTeamToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Team"
+        message="Are you sure you want to delete this team? This action cannot be undone."
+        confirmText="Delete"
+        isDanger={true}
+      />
+
+      <AlertModal
+        isOpen={!!alertData}
+        onClose={() => setAlertData(null)}
+        title={alertData?.title}
+        message={alertData?.message}
+        type={alertData?.type}
+      />
     </div>
   );
 }

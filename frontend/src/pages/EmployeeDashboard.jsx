@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import SearchableSelect from '../components/SearchableSelect';
 import api from '../api';
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function EmployeeDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
+  const [requestToDelete, setRequestToDelete] = useState(null);
 
   const location = useLocation();
 
@@ -120,16 +122,18 @@ export default function EmployeeDashboard() {
     setPhoto(null);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this report?")) return;
+  const confirmDelete = async () => {
+    if (!requestToDelete) return;
     try {
-      await api.delete(`maintenance-requests/${id}/`);
+      await api.delete(`maintenance-requests/${requestToDelete}/`);
       setSuccessMsg("Report deleted successfully!");
-      if (editId === id) handleCancelEdit();
+      if (editId === requestToDelete) handleCancelEdit();
       fetchData();
     } catch (err) {
       console.error(err);
       setError("Failed to delete report.");
+    } finally {
+      setRequestToDelete(null);
     }
   };
 
@@ -281,7 +285,7 @@ export default function EmployeeDashboard() {
                           <div className="flex gap-2">
                             <button onClick={() => handleEditClick(req)} className="text-teal-600 hover:text-teal-700 font-medium">Edit</button>
                             <span className="text-gray-300">|</span>
-                            <button onClick={() => handleDelete(req.id)} className="text-rose-600 hover:text-rose-700 font-medium">Delete</button>
+                            <button onClick={() => setRequestToDelete(req.id)} className="text-rose-600 hover:text-rose-700 font-medium">Delete</button>
                           </div>
                         )}
                       </div>
@@ -293,6 +297,16 @@ export default function EmployeeDashboard() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!requestToDelete}
+        onClose={() => setRequestToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Report"
+        message="Are you sure you want to delete this report? This action cannot be undone."
+        confirmText="Delete"
+        isDanger={true}
+      />
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import api from '../api';
 import QRModal from '../components/equipment/QRModal';
+import ConfirmModal from '../components/ConfirmModal';
+import AlertModal from '../components/AlertModal';
 
 export default function EquipmentList() {
   const navigate = useNavigate();
@@ -60,6 +62,10 @@ export default function EquipmentList() {
 
   // Actions Menu State
   const [openActionId, setOpenActionId] = useState(null);
+
+  // Custom Modals
+  const [docToDelete, setDocToDelete] = useState(null);
+  const [alertData, setAlertData] = useState(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -183,22 +189,25 @@ export default function EquipmentList() {
       setVaultEquipment(res.data);
     } catch (err) {
       console.error("Failed to upload document", err);
-      alert("Failed to upload document.");
+      setAlertData({ type: 'error', title: 'Upload Failed', message: 'Failed to upload document.' });
     } finally {
       setUploadingDoc(false);
     }
   };
 
-  const handleDeleteDocument = async (docId) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
+  const confirmDeleteDocument = async () => {
+    if (!docToDelete) return;
     
     try {
-      await api.delete(`documents/${docId}/`);
+      await api.delete(`documents/${docToDelete}/`);
       fetchEquipment();
       const res = await api.get(`equipment/${vaultEquipment.id}/`);
       setVaultEquipment(res.data);
     } catch (err) {
       console.error("Failed to delete document", err);
+      setAlertData({ type: 'error', title: 'Delete Failed', message: 'Failed to delete document.' });
+    } finally {
+      setDocToDelete(null);
     }
   };
 
@@ -344,7 +353,7 @@ export default function EquipmentList() {
       setSchedules(res.data);
     } catch(err) {
       console.error(err);
-      alert('Failed to create schedule');
+      setAlertData({ type: 'error', title: 'Create Failed', message: 'Failed to create schedule' });
     }
   };
 
@@ -551,7 +560,7 @@ export default function EquipmentList() {
                           <p className="text-xs text-gray-500">Uploaded on {new Date(doc.uploaded_at).toLocaleDateString()}</p>
                         </div>
                       </div>
-                      <button onClick={() => handleDeleteDocument(doc.id)} className="text-gray-400 hover:text-rose-600 p-2 bg-white rounded-md border border-gray-200 hover:border-rose-200 shadow-sm transition-colors">
+                      <button onClick={() => setDocToDelete(doc.id)} className="text-gray-400 hover:text-rose-600 p-2 bg-white rounded-md border border-gray-200 hover:border-rose-200 shadow-sm transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
                     </li>
@@ -747,6 +756,24 @@ export default function EquipmentList() {
         isOpen={isQrOpen} 
         onClose={() => setIsQrOpen(false)} 
         equipment={qrEquipment} 
+      />
+
+      <ConfirmModal
+        isOpen={!!docToDelete}
+        onClose={() => setDocToDelete(null)}
+        onConfirm={confirmDeleteDocument}
+        title="Delete Document"
+        message="Are you sure you want to delete this document? This action cannot be undone."
+        confirmText="Delete"
+        isDanger={true}
+      />
+
+      <AlertModal
+        isOpen={!!alertData}
+        onClose={() => setAlertData(null)}
+        title={alertData?.title}
+        message={alertData?.message}
+        type={alertData?.type}
       />
     </div>
   );

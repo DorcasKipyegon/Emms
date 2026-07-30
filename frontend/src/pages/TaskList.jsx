@@ -9,6 +9,7 @@ import ViewTaskModal from '../components/ViewTaskModal';
 import DeleteTaskModal from '../components/DeleteTaskModal';
 import ArchiveTaskModal from '../components/ArchiveTaskModal';
 import OnHoldModal from '../components/OnHoldModal';
+import AlertModal from '../components/AlertModal';
 
 export default function TaskList() {
   const [tasks, setTasks] = useState([]);
@@ -27,6 +28,7 @@ export default function TaskList() {
   const [flagRepairPromptData, setFlagRepairPromptData] = useState(null);
   const [flagRepairSuccess, setFlagRepairSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('All');
+  const [alertData, setAlertData] = useState(null);
   const { user } = useAuth();
 
   const fetchTasks = async () => {
@@ -79,7 +81,7 @@ export default function TaskList() {
       fetchTasks();
     } catch (err) {
       console.error("Failed to update status", err);
-      alert("Failed to update status. Check console.");
+      setAlertData({ type: 'error', title: 'Update Failed', message: 'Failed to update status. Check console.' });
     }
   };
 
@@ -89,7 +91,7 @@ export default function TaskList() {
       fetchTasks();
     } catch (err) {
       console.error("Failed to assign technician", err);
-      alert("Failed to assign technician. Check console.");
+      setAlertData({ type: 'error', title: 'Assignment Failed', message: 'Failed to assign technician. Check console.' });
     }
   };
 
@@ -175,7 +177,7 @@ export default function TaskList() {
 
   const handleExportCSV = () => {
     if (displayedTasks.length === 0) {
-      alert("No tasks to export.");
+      setAlertData({ type: 'error', title: 'Export Failed', message: 'No tasks to export.' });
       return;
     }
 
@@ -552,7 +554,7 @@ export default function TaskList() {
                       })
                       .catch(err => {
                         console.error('Error creating maintenance request:', err);
-                        alert('Failed to create maintenance request.');
+                        setAlertData({ type: 'error', title: 'Failed', message: 'Failed to create maintenance request.' });
                         setFlagRepairPromptData(null);
                       });
                   }}
@@ -591,6 +593,13 @@ export default function TaskList() {
         </div>
       )}
 
+      <AlertModal
+        isOpen={!!alertData}
+        onClose={() => setAlertData(null)}
+        title={alertData?.title}
+        message={alertData?.message}
+        type={alertData?.type}
+      />
     </div>
   );
 }
