@@ -233,14 +233,15 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         request_obj = serializer.save(reported_by=self.request.user)
         
-        # Send notifications in background
+        from django.db import transaction
         import threading
-        threading.Thread(target=self._notify_managers, args=(request_obj,)).start()
         
-        # Start AI Triage in background
-        import threading
+        # Send notifications in background after commit
+        transaction.on_commit(lambda: threading.Thread(target=self._notify_managers, args=(request_obj,)).start())
+        
+        # Start AI Triage in background after commit
         from emms_backend.ai_service import triage_request
-        threading.Thread(target=triage_request, args=(request_obj.id,)).start()
+        transaction.on_commit(lambda: threading.Thread(target=triage_request, args=(request_obj.id,)).start())
 
     def _notify_managers(self, request_obj):
         from emms_backend.notifications import send_system_sms, send_system_email
