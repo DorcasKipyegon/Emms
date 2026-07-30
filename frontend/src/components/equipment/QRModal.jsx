@@ -5,6 +5,9 @@ export default function QRModal({ isOpen, onClose, equipment }) {
 
   if (!isOpen || !equipment) return null;
 
+  const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api/').replace(/\/api\/?$/, '');
+  const qrUrl = equipment.qr_code ? (equipment.qr_code.startsWith('http') ? equipment.qr_code : `${baseUrl}${equipment.qr_code}`) : null;
+
   const handleCopy = () => {
     const url = `${window.location.origin}/q/${equipment.public_id}`;
     navigator.clipboard.writeText(url);
@@ -29,7 +32,7 @@ export default function QRModal({ isOpen, onClose, equipment }) {
           
           {equipment.qr_code ? (
             <div className="flex justify-center p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <img src={equipment.qr_code.startsWith('http') ? equipment.qr_code : `http://localhost:8000${equipment.qr_code}`} alt="QR Code" className="w-48 h-48 object-contain" />
+              <img src={qrUrl} alt="QR Code" className="w-48 h-48 object-contain" />
             </div>
           ) : (
             <div className="flex items-center justify-center h-48 bg-slate-50 rounded-xl border border-slate-100 text-slate-400">
@@ -52,7 +55,7 @@ export default function QRModal({ isOpen, onClose, equipment }) {
               )}
             </button>
             {equipment.qr_code && (
-              <a href={equipment.qr_code.startsWith('http') ? equipment.qr_code : `http://localhost:8000${equipment.qr_code}`} download={`${equipment.serial_number}_qr.png`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-slate-800 text-white font-bold text-sm rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
+              <a href={qrUrl} download={`${equipment.serial_number}_qr.png`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-slate-800 text-white font-bold text-sm rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
                 Download
               </a>
             )}
